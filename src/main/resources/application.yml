@@ -1,0 +1,89 @@
+spring:
+  application:
+    name: smartLedger
+  profiles:
+    active: local
+
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/smartledger_db}
+    username: ${DATASOURCE_USERNAME:postgres}
+    password: ${DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  task:
+    scheduling:
+      pool:
+        size: 5
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 8081
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+app:
+  scheduled:
+    enabled: true
+    pool-size: 5
+    reconciliation: "0 0 2 * * ?"
+    report-generation: "0 0 6 * * MON"
+    data-cleanup: "0 0 3 * * ?"
+    ai-insights: "0 0 4 * * ?"
+    health-check: "0 */15 * * * ?"
+    notification-retry: "0 */5 * * * ?"
+  data-loader:
+    enabled: false
+
+jwt:
+  secret: ${JWT_SECRET:Y29uZmlkZW50aWFsLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1nZW5lcmF0aW9uLXNob3VsZC1iZS1hdC1sZWFzdC0yNTYtYml0cy1sb25nLWZvci1zZWN1cml0eQ==}
+  expiration: ${JWT_EXPIRATION:86400000}

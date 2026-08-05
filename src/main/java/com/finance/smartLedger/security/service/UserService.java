@@ -1,0 +1,170 @@
+package com.finance.smartLedger.security.service;
+
+import com.finance.smartLedger.security.domain.User;
+import com.finance.smartLedger.security.infrastructure.persistence.UserRepository;
+import com.finance.smartLedger.shared.exception.BusinessException;
+import com.finance.smartLedger.shared.exception.ErrorCodes;
+import java.util.List;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
+@Transactional
+public class UserService {
+
+  private final UserRepository userRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final RoleService roleService;
+  private final PermissionService permissionService;
+
+  public User createUser(String username, String email, String password) {
+    if (userRepository.existsByUsername(username)) {
+      throw new BusinessException(ErrorCodes.CONFLICT, "Username already exists");
+    }
+    if (userRepository.existsByEmail(email)) {
+      throw new BusinessException(ErrorCodes.CONFLICT, "Email already exists");
+    }
+
+    User user = new User(username, email, passwordEncoder.encode(password));
+    user.setEnabled(true);
+    user.setCreatedBy("SYSTEM");
+    user.setUpdatedBy("SYSTEM");
+    return userRepository.save(user);
+  }
+
+  public User createUser(
+      String username, String email, String password, String firstName, String lastName) {
+    User user = createUser(username, email, password);
+    user.setFirstName(firstName);
+    user.setLastName(lastName);
+    return userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public User updateUser(UUID userId, String firstName, String lastName, String phone) {
+    User user = getUserById(userId);
+    user.setFirstName(firstName);
+    user.setLastName(lastName);
+    user.setPhone(phone);
+    return userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public User updatePassword(UUID userId, String oldPassword, String newPassword) {
+    User user = getUserById(userId);
+    if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+      throw new BusinessException(ErrorCodes.BAD_REQUEST, "Current password is incorrect");
+    }
+    user.setPassword(passwordEncoder.encode(newPassword));
+    return userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public void enableUser(UUID userId) {
+    User user = getUserById(userId);
+    user.setEnabled(true);
+    userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public void disableUser(UUID userId) {
+    User user = getUserById(userId);
+    user.setEnabled(false);
+    userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public void lockUser(UUID userId) {
+    User user = getUserById(userId);
+    user.setAccountNonLocked(false);
+    userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public void unlockUser(UUID userId) {
+    User user = getUserById(userId);
+    user.setAccountNonLocked(true);
+    user.setLockedUntil(null);
+    user.setFailedLoginAttempts(0);
+    userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public void deleteUser(UUID userId) {
+    User user = getUserById(userId);
+    user.softDelete();
+    userRepository.save(user);
+  }
+
+  @Transactional(readOnly = true)
+  @Cacheable(value = "users", key = "#userId")
+  public User getUserById(UUID userId) {
+    return userRepository
+        .findById(userId)
+        .orElseThrow(() -> new BusinessException(ErrorCodes.NOT_FOUND, "User not found"));
+  }
+
+  @Transactional(readOnly = true)
+  public User getUserByUsername(String username) {
+    return userRepository
+        .findByUsername(username)
+        .orElseThrow(() -> new BusinessException(ErrorCodes.NOT_FOUND, "User not found"));
+  }
+
+  @Transactional(readOnly = true)
+  public User getUserByEmail(String email) {
+    return userRepository
+        .findByEmail(email)
+        .orElseThrow(() -> new BusinessException(ErrorCodes.NOT_FOUND, "User not found"));
+  }
+
+  @Transactional(readOnly = true)
+  public List<User> getAllUsers() {
+    return userRepository.findAll();
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public User grantRole(UUID userId, UUID roleId) {
+    User user = getUserById(userId);
+    var role = roleService.getRoleById(roleId);
+    user.grantRole(role);
+    return userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public User revokeRole(UUID userId, UUID roleId) {
+    User user = getUserById(userId);
+    var role = roleService.getRoleById(roleId);
+    user.revokeRole(role);
+    return userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public User grantPermission(UUID userId, UUID permissionId) {
+    User user = getUserById(userId);
+    var permission = permissionService.getPermissionById(permissionId);
+    user.grantPermission(permission);
+    return userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public User revokePermission(UUID userId, UUID permissionId) {
+    User user = getUserById(userId);
+    var permission = permissionService.getPermissionById(permissionId);
+    user.revokePermission(permission);
+    return userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#username")
+  public User recordSuccessfulLogin(String username) {
+    User user = getUserByUsername(username);
+    user.recordSuccessfulLogin();
+    return userRepository.save(user);
+  }
+}

@@ -17,7 +17,8 @@ public class PermissionEvaluator {
         .map(
             userContext -> {
               try {
-                User user = userService.getUserById(java.util.UUID.fromString(userContext.userId()));
+                User user =
+                    userService.getUserById(java.util.UUID.fromString(userContext.userId()));
                 return user.hasPermission(permissionCode);
               } catch (Exception e) {
                 return false;
@@ -31,7 +32,8 @@ public class PermissionEvaluator {
         .map(
             userContext -> {
               try {
-                User user = userService.getUserById(java.util.UUID.fromString(userContext.userId()));
+                User user =
+                    userService.getUserById(java.util.UUID.fromString(userContext.userId()));
                 return user.getRoles().stream().anyMatch(role -> role.getCode().equals(roleCode));
               } catch (Exception e) {
                 return false;
@@ -45,7 +47,8 @@ public class PermissionEvaluator {
         .map(
             userContext -> {
               try {
-                User user = userService.getUserById(java.util.UUID.fromString(userContext.userId()));
+                User user =
+                    userService.getUserById(java.util.UUID.fromString(userContext.userId()));
                 for (String code : permissionCodes) {
                   if (user.hasPermission(code)) return true;
                 }
@@ -62,7 +65,8 @@ public class PermissionEvaluator {
         .map(
             userContext -> {
               try {
-                User user = userService.getUserById(java.util.UUID.fromString(userContext.userId()));
+                User user =
+                    userService.getUserById(java.util.UUID.fromString(userContext.userId()));
                 for (String code : permissionCodes) {
                   if (!user.hasPermission(code)) return false;
                 }

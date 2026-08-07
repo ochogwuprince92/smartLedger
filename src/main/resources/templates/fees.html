@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fee Management - SmartLedger</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-light">
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <a class="navbar-brand" th:href="@{/dashboard}">
+                <i class="fas fa-chart-line me-2"></i>SmartLedger
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/dashboard}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" th:href="@{/fees}">Fee Management</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/payments}">Payments</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" th:href="@{/ledger}">Ledger</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 fw-bold">Fee Management</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFeeModal">
+                <i class="fas fa-plus me-2"></i>Create Fee Invoice
+            </button>
+        </div>
+
+        <!-- Fee Schedules -->
+        <div class="card mb-4">
+            <div class="card-header bg-white">
+                <h5 class="card-title fw-bold mb-0">Fee Schedules</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Name</th>
+                                <th>Academic Year</th>
+                                <th>Class Grade</th>
+                                <th>Effective From</th>
+                                <th>Effective To</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>FS-2024-01</td>
+                                <td>Tuition Fee - Term 1</td>
+                                <td>2024-2025</td>
+                                <td>Grade 10</td>
+                                <td>2024-09-01</td>
+                                <td>2024-12-31</td>
+                                <td><span class="badge bg-success">Active</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>FS-2024-02</td>
+                                <td>Tuition Fee - Term 2</td>
+                                <td>2024-2025</td>
+                                <td>Grade 10</td>
+                                <td>2025-01-01</td>
+                                <td>2025-04-30</td>
+                                <td><span class="badge bg-secondary">Upcoming</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-edit"></i></button>
+                                    <button class="btn btn-sm btn-outline-danger"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Fee Invoices -->
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title fw-bold mb-0">Recent Fee Invoices</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Invoice Number</th>
+                                <th>Student ID</th>
+                                <th>Class Grade</th>
+                                <th>Amount</th>
+                                <th>Due Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>INV-2024-001</td>
+                                <td>uuid-1234-5678</td>
+                                <td>Grade 10</td>
+                                <td>$1,200.00</td>
+                                <td>2024-09-30</td>
+                                <td><span class="badge bg-warning">Pending</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-success me-1"><i class="fas fa-credit-card"></i> Pay</button>
+                                    <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-eye"></i></button>
+                                    <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-file-pdf"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>INV-2024-002</td>
+                                <td>uuid-2345-6789</td>
+                                <td>Grade 11</td>
+                                <td>$1,500.00</td>
+                                <td>2024-09-30</td>
+                                <td><span class="badge bg-success">Paid</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-eye"></i></button>
+                                    <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-file-pdf"></i></button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>INV-2024-003</td>
+                                <td>uuid-3456-7890</td>
+                                <td>Grade 12</td>
+                                <td>$1,800.00</td>
+                                <td>2024-09-30</td>
+                                <td><span class="badge bg-danger">Overdue</span></td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-success me-1"><i class="fas fa-credit-card"></i> Pay</button>
+                                    <button class="btn btn-sm btn-outline-primary me-1"><i class="fas fa-eye"></i></button>
+                                    <button class="btn btn-sm btn-outline-secondary"><i class="fas fa-bell"></i> Remind</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Fee Modal -->
+    <div class="modal fade" id="createFeeModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Create Fee Invoice</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Student ID</label>
+                                <input type="text" class="form-control" placeholder="Enter student ID (UUID)">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Fee Schedule</label>
+                                <select class="form-select">
+                                    <option value="">Select Schedule</option>
+                                    <option>Tuition Fee - Term 1</option>
+                                    <option>Tuition Fee - Term 2</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount</label>
+                                <input type="number" class="form-control" placeholder="0.00">
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Due Date</label>
+                                <input type="date" class="form-control">
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" rows="3" placeholder="Enter description..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary">Create Invoice</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

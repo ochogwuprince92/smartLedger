@@ -65,6 +65,7 @@ class PaymentServiceTest {
     Payment expectedPayment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             paymentDate,
             paymentMethod,
             amount,
@@ -82,6 +83,7 @@ class PaymentServiceTest {
     Payment result =
         paymentService.createPayment(
             PAYMENT_NUMBER,
+            null,
             paymentDate,
             paymentMethod,
             amount,
@@ -107,7 +109,7 @@ class PaymentServiceTest {
     verify(auditService)
         .logCreate(
             eq("Payment"),
-            any(UUID.class),
+            isNull(),
             eq("Payment created: " + PAYMENT_NUMBER),
             any(String.class),
             eq(CREATED_BY));
@@ -125,6 +127,7 @@ class PaymentServiceTest {
             () ->
                 paymentService.createPayment(
                     PAYMENT_NUMBER,
+                    null,
                     LocalDateTime.now(),
                     PaymentMethod.CREDIT_CARD,
                     new BigDecimal("100.00"),
@@ -149,6 +152,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -174,7 +178,7 @@ class PaymentServiceTest {
     verify(auditService)
         .logStatusChange(
             eq("Payment"),
-            eq(paymentId),
+            isNull(),
             eq("Payment status changed to PROCESSING"),
             eq("PENDING"),
             eq("PROCESSING"),
@@ -205,6 +209,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -235,6 +240,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -243,6 +249,7 @@ class PaymentServiceTest {
             PAYER_EMAIL,
             "Test payment",
             CREATED_BY);
+    payment.setId(paymentId);
     payment.startProcessing(CREATED_BY);
 
     String gatewayTransactionId = "TXN-12345";
@@ -286,7 +293,7 @@ class PaymentServiceTest {
     verify(receiptService).generateReceipt(paymentId, UPDATED_BY);
     verify(notificationService)
         .sendPaymentCompletedNotification(
-            PAYER_EMAIL, PAYER_PHONE, PAYMENT_NUMBER, "100.00", "USD", paymentId, UPDATED_BY);
+            PAYER_EMAIL, null, PAYMENT_NUMBER, "100.00", "USD", paymentId, UPDATED_BY);
   }
 
   @Test
@@ -296,6 +303,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -304,6 +312,7 @@ class PaymentServiceTest {
             PAYER_EMAIL,
             "Test payment",
             CREATED_BY);
+    payment.setId(paymentId);
     payment.startProcessing(CREATED_BY);
 
     String gatewayResponseCode = "500";
@@ -337,7 +346,7 @@ class PaymentServiceTest {
     verify(notificationService)
         .sendPaymentFailedNotification(
             PAYER_EMAIL,
-            PAYER_PHONE,
+            null,
             PAYMENT_NUMBER,
             gatewayResponseMessage,
             paymentId,
@@ -351,6 +360,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -378,7 +388,7 @@ class PaymentServiceTest {
     verify(auditService)
         .logStatusChange(
             eq("Payment"),
-            eq(paymentId),
+            isNull(),
             eq("Payment status changed to REFUNDED"),
             eq("COMPLETED"),
             eq("REFUNDED"),
@@ -393,6 +403,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -421,6 +432,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -445,7 +457,7 @@ class PaymentServiceTest {
     verify(auditService)
         .logStatusChange(
             eq("Payment"),
-            eq(paymentId),
+            isNull(),
             eq("Payment status changed to CANCELLED"),
             eq("PENDING"),
             eq("CANCELLED"),
@@ -459,6 +471,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -499,6 +512,7 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
@@ -526,13 +540,13 @@ class PaymentServiceTest {
     Payment payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
             null, // No email
-            null, // No phone
             "Test payment",
             CREATED_BY);
     payment.startProcessing(CREATED_BY);

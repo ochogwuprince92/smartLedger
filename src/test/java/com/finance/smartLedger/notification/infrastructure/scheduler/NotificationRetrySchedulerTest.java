@@ -148,8 +148,7 @@ class NotificationRetrySchedulerTest {
   }
 
   private Notification createFailedNotification() {
-    return Notification.builder()
-        .id(UUID.randomUUID())
+    Notification notification = Notification.builder()
         .recipientEmail("test@example.com")
         .recipientPhone(null)
         .notificationType(NotificationType.PAYMENT_COMPLETED)
@@ -163,5 +162,7 @@ class NotificationRetrySchedulerTest {
         .maxRetries(MAX_RETRY_ATTEMPTS)
         .lastRetryAt(null)
         .build();
+    notification.setId(UUID.randomUUID());
+    return notification;
   }
 }

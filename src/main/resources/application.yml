@@ -83,7 +83,14 @@ app:
     notification-retry: "0 */5 * * * ?"
   data-loader:
     enabled: false
+  base-url: ${APP_BASE_URL:http://localhost:8081}
 
 jwt:
   secret: ${JWT_SECRET:Y29uZmlkZW50aWFsLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1nZW5lcmF0aW9uLXNob3VsZC1iZS1hdC1sZWFzdC0yNTYtYml0cy1sb25nLWZvci1zZWN1cml0eQ==}
   expiration: ${JWT_EXPIRATION:86400000}
+
+n8n:
+  base-url: ${N8N_BASE_URL:http://localhost:5678}
+  webhook-path: ${N8N_WEBHOOK_PATH:/webhook/finance-ai-insight}
+  callback-secret: ${N8N_CALLBACK_SECRET:your-secret-key-here}
+  timeout: ${N8N_TIMEOUT:30000}

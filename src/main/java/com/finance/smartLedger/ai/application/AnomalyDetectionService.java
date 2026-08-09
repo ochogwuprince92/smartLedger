@@ -1,6 +1,7 @@
 package com.finance.smartLedger.ai.application;
 
 import com.finance.smartLedger.ai.domain.AIInsight;
+import com.finance.smartLedger.ai.domain.AIInsightType;
 import com.finance.smartLedger.ai.domain.InsightStatus;
 import com.finance.smartLedger.ai.infrastructure.persistence.AIInsightRepository;
 import com.finance.smartLedger.ledger.domain.Account;
@@ -58,6 +59,7 @@ public class AnomalyDetectionService {
 
         if (isDuplicatePayment(payment1, payment2)) {
           AIInsight insight = createDuplicatePaymentInsight(payment1, payment2, "system");
+          aiInsightRepository.save(insight);
           anomalies.add(insight);
           log.info("Duplicate payment detected: {} and {}", payment1.getId(), payment2.getId());
         }
@@ -75,6 +77,7 @@ public class AnomalyDetectionService {
     for (Account account : accounts) {
       if (account.getBalance().getCurrentBalance().getAmount().compareTo(BigDecimal.ZERO) < 0) {
         AIInsight insight = createNegativeBalanceInsight(account, "system");
+        aiInsightRepository.save(insight);
         anomalies.add(insight);
         log.warn("Negative balance detected for account: {}", account.getAccountNumber());
       }
@@ -102,6 +105,7 @@ public class AnomalyDetectionService {
 
       if (zScore > outlierStdDevThreshold) {
         AIInsight insight = createOutlierInsight(transaction, zScore, mean, stdDev, "system");
+        aiInsightRepository.save(insight);
         anomalies.add(insight);
         log.info("Outlier transaction detected: {} with Z-score: {}", transaction.getId(), zScore);
       }
@@ -133,6 +137,7 @@ public class AnomalyDetectionService {
 
       if (riskScore > riskThreshold) {
         AIInsight insight = createHighRiskPaymentInsight(payment, riskScore, "system");
+        aiInsightRepository.save(insight);
         anomalies.add(insight);
         log.warn("High-risk payment detected: {} with risk score: {}", payment.getId(), riskScore);
       }
@@ -189,9 +194,9 @@ public class AnomalyDetectionService {
 
     AIInsight insight =
         AIInsight.builder()
-            .insightType("DUPLICATE_PAYMENT")
-            .title("Potential Duplicate Payment Detected")
-            .description(
+            .insightType(AIInsightType.ANOMALY_DETECTION)
+            .summary("Potential Duplicate Payment Detected")
+            .rootCause(
                 String.format(
                     "Two payments with amount %s were made within %d seconds. Payment IDs: %s, %s",
                     payment1.getAmount(),
@@ -199,17 +204,10 @@ public class AnomalyDetectionService {
                         .getSeconds(),
                     payment1.getId(),
                     payment2.getId()))
-            .severity("HIGH")
-            .status(InsightStatus.PENDING)
-            .recommendation(
+            .recommendations(
                 "Review both payments and confirm if they are legitimate duplicates. If confirmed, refund one payment.")
-            .confidenceScore(0.85)
-            .dataSource("RULE_BASED")
-            .referenceDate(LocalDate.now())
-            .metadata(metadata.toString())
-            .isActionable(true)
-            .isReviewed(false)
-            .isResolved(false)
+            .status(InsightStatus.PENDING)
+            .requestedAt(LocalDateTime.now())
             .build();
     insight.setCreatedBy(createdBy);
     return insight;
@@ -223,25 +221,18 @@ public class AnomalyDetectionService {
 
     AIInsight insight =
         AIInsight.builder()
-            .insightType("NEGATIVE_BALANCE")
-            .title("Negative Balance Detected")
-            .description(
+            .insightType(AIInsightType.ANOMALY_DETECTION)
+            .summary("Negative Balance Detected")
+            .rootCause(
                 String.format(
                     "Account %s (Type: %s) has a negative balance of %s",
                     account.getAccountNumber(),
                     account.getAccountType(),
                     account.getBalance().getCurrentBalance().getAmount()))
-            .severity("HIGH")
-            .status(InsightStatus.PENDING)
-            .recommendation(
+            .recommendations(
                 "Review the account transactions and investigate the cause of the negative balance. Consider adjusting the account or reconciling transactions.")
-            .confidenceScore(0.9)
-            .dataSource("RULE_BASED")
-            .referenceDate(LocalDate.now())
-            .metadata(metadata.toString())
-            .isActionable(true)
-            .isReviewed(false)
-            .isResolved(false)
+            .status(InsightStatus.PENDING)
+            .requestedAt(LocalDateTime.now())
             .build();
     insight.setCreatedBy(createdBy);
     return insight;
@@ -258,23 +249,16 @@ public class AnomalyDetectionService {
 
     AIInsight insight =
         AIInsight.builder()
-            .insightType("OUTLIER_TRANSACTION")
-            .title("Outlier Transaction Detected")
-            .description(
+            .insightType(AIInsightType.ANOMALY_DETECTION)
+            .summary("Outlier Transaction Detected")
+            .rootCause(
                 String.format(
                     "Transaction %s with amount %s is an outlier (Z-score: %.2f, Mean: %.2f, Std Dev: %.2f)",
                     transaction.getId(), transaction.getAmount().getAmount(), zScore, mean, stdDev))
-            .severity(zScore > 5.0 ? "HIGH" : "MEDIUM")
-            .status(InsightStatus.PENDING)
-            .recommendation(
+            .recommendations(
                 "Review this transaction for legitimacy. Verify if the amount is correct and authorized.")
-            .confidenceScore(Math.min(0.95, 0.5 + (zScore / 10.0)))
-            .dataSource("RULE_BASED")
-            .referenceDate(LocalDate.now())
-            .metadata(metadata.toString())
-            .isActionable(true)
-            .isReviewed(false)
-            .isResolved(false)
+            .status(InsightStatus.PENDING)
+            .requestedAt(LocalDateTime.now())
             .build();
     insight.setCreatedBy(createdBy);
     return insight;
@@ -290,23 +274,16 @@ public class AnomalyDetectionService {
 
     AIInsight insight =
         AIInsight.builder()
-            .insightType("HIGH_RISK_PAYMENT")
-            .title("High-Risk Payment Detected")
-            .description(
+            .insightType(AIInsightType.ANOMALY_DETECTION)
+            .summary("High-Risk Payment Detected")
+            .rootCause(
                 String.format(
                     "Payment %s with amount %s has a high risk score of %.2f",
                     payment.getId(), payment.getAmount(), riskScore))
-            .severity(riskScore > 0.8 ? "HIGH" : "MEDIUM")
-            .status(InsightStatus.PENDING)
-            .recommendation(
+            .recommendations(
                 "Conduct additional verification for this payment. Review payment history and consider manual approval.")
-            .confidenceScore(riskScore)
-            .dataSource("RULE_BASED")
-            .referenceDate(LocalDate.now())
-            .metadata(metadata.toString())
-            .isActionable(true)
-            .isReviewed(false)
-            .isResolved(false)
+            .status(InsightStatus.PENDING)
+            .requestedAt(LocalDateTime.now())
             .build();
     insight.setCreatedBy(createdBy);
     return insight;

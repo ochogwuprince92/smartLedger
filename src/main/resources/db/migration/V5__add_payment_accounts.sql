@@ -2,13 +2,20 @@
 -- This migration creates cash accounts for different payment methods and accounts receivable
 
 -- Credit Card Cash Account
-INSERT INTO accounts (id, account_number, account_code, account_name, account_type, description, is_active, created_at, created_by, updated_at, updated_by)
+INSERT INTO accounts (id, account_number, account_code, account_name, account_type, current_balance, current_balance_currency, debit_balance, debit_balance_currency, credit_balance, credit_balance_currency, balance_last_updated, description, is_active, created_at, created_by, updated_at, updated_by)
 VALUES (
     gen_random_uuid(),
     '1001',
     'CASH_CC',
     'Credit Card Cash Account',
     'ASSET',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    CURRENT_TIMESTAMP,
     'Cash account for credit card payments',
     true,
     CURRENT_TIMESTAMP,
@@ -18,13 +25,20 @@ VALUES (
 ) ON CONFLICT (account_code) DO NOTHING;
 
 -- Debit Card Cash Account
-INSERT INTO accounts (id, account_number, account_code, account_name, account_type, description, is_active, created_at, created_by, updated_at, updated_by)
+INSERT INTO accounts (id, account_number, account_code, account_name, account_type, current_balance, current_balance_currency, debit_balance, debit_balance_currency, credit_balance, credit_balance_currency, balance_last_updated, description, is_active, created_at, created_by, updated_at, updated_by)
 VALUES (
     gen_random_uuid(),
     '1002',
     'CASH_DC',
     'Debit Card Cash Account',
     'ASSET',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    CURRENT_TIMESTAMP,
     'Cash account for debit card payments',
     true,
     CURRENT_TIMESTAMP,
@@ -34,13 +48,20 @@ VALUES (
 ) ON CONFLICT (account_code) DO NOTHING;
 
 -- Bank Transfer Cash Account
-INSERT INTO accounts (id, account_number, account_code, account_name, account_type, description, is_active, created_at, created_by, updated_at, updated_by)
+INSERT INTO accounts (id, account_number, account_code, account_name, account_type, current_balance, current_balance_currency, debit_balance, debit_balance_currency, credit_balance, credit_balance_currency, balance_last_updated, description, is_active, created_at, created_by, updated_at, updated_by)
 VALUES (
     gen_random_uuid(),
     '1003',
     'CASH_BT',
     'Bank Transfer Cash Account',
     'ASSET',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    CURRENT_TIMESTAMP,
     'Cash account for bank transfer payments',
     true,
     CURRENT_TIMESTAMP,
@@ -50,13 +71,20 @@ VALUES (
 ) ON CONFLICT (account_code) DO NOTHING;
 
 -- Mobile Money Cash Account
-INSERT INTO accounts (id, account_number, account_code, account_name, account_type, description, is_active, created_at, created_by, updated_at, updated_by)
+INSERT INTO accounts (id, account_number, account_code, account_name, account_type, current_balance, current_balance_currency, debit_balance, debit_balance_currency, credit_balance, credit_balance_currency, balance_last_updated, description, is_active, created_at, created_by, updated_at, updated_by)
 VALUES (
     gen_random_uuid(),
     '1004',
     'CASH_MM',
     'Mobile Money Cash Account',
     'ASSET',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    CURRENT_TIMESTAMP,
     'Cash account for mobile money payments',
     true,
     CURRENT_TIMESTAMP,
@@ -66,13 +94,20 @@ VALUES (
 ) ON CONFLICT (account_code) DO NOTHING;
 
 -- Cryptocurrency Cash Account
-INSERT INTO accounts (id, account_number, account_code, account_name, account_type, description, is_active, created_at, created_by, updated_at, updated_by)
+INSERT INTO accounts (id, account_number, account_code, account_name, account_type, current_balance, current_balance_currency, debit_balance, debit_balance_currency, credit_balance, credit_balance_currency, balance_last_updated, description, is_active, created_at, created_by, updated_at, updated_by)
 VALUES (
     gen_random_uuid(),
     '1005',
     'CASH_CR',
     'Cryptocurrency Cash Account',
     'ASSET',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    CURRENT_TIMESTAMP,
     'Cash account for cryptocurrency payments',
     true,
     CURRENT_TIMESTAMP,
@@ -82,13 +117,20 @@ VALUES (
 ) ON CONFLICT (account_code) DO NOTHING;
 
 -- Check Cash Account
-INSERT INTO accounts (id, account_number, account_code, account_name, account_type, description, is_active, created_at, created_by, updated_at, updated_by)
+INSERT INTO accounts (id, account_number, account_code, account_name, account_type, current_balance, current_balance_currency, debit_balance, debit_balance_currency, credit_balance, credit_balance_currency, balance_last_updated, description, is_active, created_at, created_by, updated_at, updated_by)
 VALUES (
     gen_random_uuid(),
     '1006',
     'CASH_CH',
     'Check Cash Account',
     'ASSET',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    CURRENT_TIMESTAMP,
     'Cash account for check payments',
     true,
     CURRENT_TIMESTAMP,
@@ -98,13 +140,20 @@ VALUES (
 ) ON CONFLICT (account_code) DO NOTHING;
 
 -- Physical Cash Account
-INSERT INTO accounts (id, account_number, account_code, account_name, account_type, description, is_active, created_at, created_by, updated_at, updated_by)
+INSERT INTO accounts (id, account_number, account_code, account_name, account_type, current_balance, current_balance_currency, debit_balance, debit_balance_currency, credit_balance, credit_balance_currency, balance_last_updated, description, is_active, created_at, created_by, updated_at, updated_by)
 VALUES (
     gen_random_uuid(),
     '1007',
     'CASH_CP',
     'Physical Cash Account',
     'ASSET',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    CURRENT_TIMESTAMP,
     'Cash account for physical cash payments',
     true,
     CURRENT_TIMESTAMP,
@@ -114,13 +163,20 @@ VALUES (
 ) ON CONFLICT (account_code) DO NOTHING;
 
 -- Accounts Receivable Account
-INSERT INTO accounts (id, account_number, account_code, account_name, account_type, description, is_active, created_at, created_by, updated_at, updated_by)
+INSERT INTO accounts (id, account_number, account_code, account_name, account_type, current_balance, current_balance_currency, debit_balance, debit_balance_currency, credit_balance, credit_balance_currency, balance_last_updated, description, is_active, created_at, created_by, updated_at, updated_by)
 VALUES (
     gen_random_uuid(),
     '1200',
     'AR01',
     'Accounts Receivable',
     'ASSET',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    0.00,
+    'USD',
+    CURRENT_TIMESTAMP,
     'Accounts receivable for general payments',
     true,
     CURRENT_TIMESTAMP,

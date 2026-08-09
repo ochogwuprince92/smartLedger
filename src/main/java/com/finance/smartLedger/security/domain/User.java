@@ -100,9 +100,7 @@ public class User extends AuditableEntity {
 
   public boolean hasPermission(String permissionCode) {
     return permissions.stream().anyMatch(p -> p.getCode().equals(permissionCode))
-        || roles.stream()
-            .flatMap(role -> role.getPermissions().stream())
-            .anyMatch(p -> p.getCode().equals(permissionCode));
+        || roles.stream().anyMatch(role -> role.hasPermission(permissionCode));
   }
 
   public void recordSuccessfulLogin() {

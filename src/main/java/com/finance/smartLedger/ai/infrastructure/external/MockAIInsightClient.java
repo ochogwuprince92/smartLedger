@@ -22,7 +22,7 @@ public class MockAIInsightClient implements AIInsightClient {
             "Using rule-based anomaly detection. Configure AI provider for enhanced insights.")
         .severity("MEDIUM")
         .recommendation(
-            "Review anomalies detected by rule-based system. Configure AI provider for deeper analysis.")
+            "Review anomalies detected by rule-based system. Configure AI provider for enhanced insights.")
         .confidenceScore(0.7)
         .rootCause("Rule-based analysis")
         .suggestedActions(
@@ -46,7 +46,7 @@ public class MockAIInsightClient implements AIInsightClient {
             "Using historical data analysis. Configure AI provider for predictive forecasting.")
         .severity("LOW")
         .recommendation(
-            "Review historical payment patterns. Configure AI provider for predictive insights.")
+            "Review historical payment patterns. Configure AI provider for predictive forecasting.")
         .confidenceScore(0.6)
         .rootCause("Historical trend analysis")
         .suggestedActions(
@@ -69,7 +69,7 @@ public class MockAIInsightClient implements AIInsightClient {
             "Using rule-based variance detection. Configure AI provider for root cause analysis.")
         .severity("MEDIUM")
         .recommendation(
-            "Review variances detected by rule-based system. Configure AI provider for deeper analysis.")
+            "Review variances detected by rule-based system. Configure AI provider for root cause analysis.")
         .confidenceScore(0.7)
         .rootCause("Rule-based variance analysis")
         .suggestedActions(

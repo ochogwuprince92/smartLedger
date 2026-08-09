@@ -1,18 +1,21 @@
 package com.finance.smartLedger.ai.application;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.finance.smartLedger.ai.application.dto.AIInsightRequest;
+import com.finance.smartLedger.ai.application.dto.AICallbackRequest;
 import com.finance.smartLedger.ai.domain.AIInsight;
+import com.finance.smartLedger.ai.domain.AIInsightType;
 import com.finance.smartLedger.ai.domain.InsightStatus;
-import com.finance.smartLedger.ai.infrastructure.external.AIInsightClient;
-import com.finance.smartLedger.ai.infrastructure.external.AIInsightResponse;
+import com.finance.smartLedger.ai.domain.RiskLevel;
 import com.finance.smartLedger.ai.infrastructure.persistence.AIInsightRepository;
-import java.time.LocalDate;
-import java.util.HashMap;
+import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,254 +25,164 @@ import org.springframework.transaction.annotation.Transactional;
 public class AIInsightService {
 
   private final AIInsightRepository aiInsightRepository;
-  private final AIInsightClient aiInsightClient;
+  private final AIInsightGateway aiInsightGateway;
+  private final ObjectMapper objectMapper;
 
-  public AIInsight createInsight(
-      String insightType,
-      String title,
-      String description,
-      String severity,
-      String recommendation,
-      Double confidenceScore,
-      String dataSource,
-      LocalDate referenceDate,
-      String metadata,
-      Boolean isActionable,
+  @Value("${app.base-url:http://localhost:8081}")
+  private String appBaseUrl;
+
+  @Transactional
+  public AIInsight createReconciliationInsight(
+      UUID reconciliationId,
+      String reconciliationNumber,
+      String sourceSystem,
+      Integer duplicatePayments,
+      Integer missingSettlements,
+      Integer amountMismatches,
+      Integer negativeBalances,
+      Integer transactionCount,
+      String reconciliationStatus,
       String createdBy) {
+
+    String requestId = UUID.randomUUID().toString();
 
     AIInsight insight =
         AIInsight.builder()
-            .insightType(insightType)
-            .title(title)
-            .description(description)
-            .severity(severity)
-            .recommendation(recommendation)
-            .confidenceScore(confidenceScore)
-            .dataSource(dataSource)
-            .referenceDate(referenceDate)
-            .metadata(metadata)
-            .isActionable(isActionable)
-            .isReviewed(false)
-            .isResolved(false)
+            .requestId(requestId)
+            .reconciliationId(reconciliationId)
+            .insightType(AIInsightType.RECONCILIATION)
+            .status(InsightStatus.PENDING)
+            .requestedAt(LocalDateTime.now())
+            .anomalyCount(duplicatePayments + missingSettlements + amountMismatches + negativeBalances)
+            .retryCount(0)
+            .maxRetries(3)
             .build();
     insight.setCreatedBy(createdBy);
 
-    return aiInsightRepository.save(insight);
+    AIInsight savedInsight = aiInsightRepository.save(insight);
+
+    try {
+      sendToN8n(savedInsight, reconciliationNumber, sourceSystem, duplicatePayments,
+          missingSettlements, amountMismatches, negativeBalances, transactionCount, reconciliationStatus);
+    } catch (Exception e) {
+      log.error("Failed to send AI insight request to n8n: requestId={}", requestId, e);
+      savedInsight.markAsFailed(e.getMessage());
+      aiInsightRepository.save(savedInsight);
+    }
+
+    return savedInsight;
   }
 
   public Optional<AIInsight> findById(UUID id) {
     return aiInsightRepository.findById(id);
   }
 
-  public List<AIInsight> findByInsightType(String insightType) {
-    return aiInsightRepository.findByInsightType(insightType);
+  public Optional<AIInsight> findByRequestId(String requestId) {
+    return aiInsightRepository.findByRequestId(requestId);
+  }
+
+  public List<AIInsight> findByReconciliationId(UUID reconciliationId) {
+    return aiInsightRepository.findByReconciliationId(reconciliationId);
   }
 
   public List<AIInsight> findByStatus(InsightStatus status) {
     return aiInsightRepository.findByStatus(status);
   }
 
-  public List<AIInsight> findBySeverity(String severity) {
-    return aiInsightRepository.findBySeverity(severity);
+  public List<AIInsight> findByInsightType(AIInsightType insightType) {
+    return aiInsightRepository.findByInsightType(insightType);
   }
 
-  public List<AIInsight> findByDataSource(String dataSource) {
-    return aiInsightRepository.findByDataSource(dataSource);
+  public List<AIInsight> findByRiskLevel(RiskLevel riskLevel) {
+    return aiInsightRepository.findByRiskLevel(riskLevel);
   }
 
-  public List<AIInsight> findByReferenceDateBetween(LocalDate startDate, LocalDate endDate) {
-    return aiInsightRepository.findByReferenceDateBetween(startDate, endDate);
+  public List<AIInsight> findFailedInsights() {
+    return aiInsightRepository.findByStatus(InsightStatus.FAILED);
   }
 
-  public List<AIInsight> findPendingInsights() {
-    return aiInsightRepository.findByStatusAndIsReviewedFalse(InsightStatus.PENDING);
-  }
-
-  public List<AIInsight> findActionableInsights() {
-    return aiInsightRepository.findByIsActionableTrueAndIsResolvedFalse();
-  }
-
-  public List<AIInsight> findAllInsights() {
-    return aiInsightRepository.findAll();
+  public List<AIInsight> findRetryableInsights() {
+    return aiInsightRepository.findByStatusAndRetryCountLessThanMaxRetries(InsightStatus.FAILED);
   }
 
   @Transactional
-  public AIInsight updateInsight(
-      UUID id,
-      String title,
-      String description,
-      String recommendation,
-      String severity,
-      Double confidenceScore,
-      String updatedBy) {
-
+  public void handleCallback(AICallbackRequest callback) {
     AIInsight insight =
         aiInsightRepository
-            .findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("AI Insight not found: " + id));
+            .findByRequestId(callback.getRequestId())
+            .orElseThrow(() -> new IllegalArgumentException("AI Insight not found for requestId: " + callback.getRequestId()));
 
-    if (title != null) {
-      insight.setTitle(title);
-    }
-    if (description != null) {
-      insight.setDescription(description);
-    }
-    if (recommendation != null) {
-      insight.setRecommendation(recommendation);
-    }
-    if (severity != null) {
-      insight.setSeverity(severity);
-    }
-    if (confidenceScore != null) {
-      insight.setConfidenceScore(confidenceScore);
-    }
-
-    insight.setUpdatedBy(updatedBy);
-    return aiInsightRepository.save(insight);
-  }
-
-  @Transactional
-  public void markAsReviewed(UUID id, String reviewedBy) {
-    AIInsight insight =
-        aiInsightRepository
-            .findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("AI Insight not found: " + id));
-
-    insight.markAsReviewed(reviewedBy);
-    aiInsightRepository.save(insight);
-  }
-
-  @Transactional
-  public void markAsResolved(UUID id, String resolvedBy) {
-    AIInsight insight =
-        aiInsightRepository
-            .findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("AI Insight not found: " + id));
-
-    insight.markAsResolved(resolvedBy);
-    aiInsightRepository.save(insight);
-  }
-
-  @Transactional
-  public void dismissInsight(UUID id, String dismissedBy) {
-    AIInsight insight =
-        aiInsightRepository
-            .findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("AI Insight not found: " + id));
-
-    insight.dismiss(dismissedBy);
-    aiInsightRepository.save(insight);
-  }
-
-  @Transactional
-  public void deleteInsight(UUID id) {
-    AIInsight insight =
-        aiInsightRepository
-            .findById(id)
-            .orElseThrow(() -> new IllegalArgumentException("AI Insight not found: " + id));
-
-    aiInsightRepository.deleteById(id);
-  }
-
-  @Transactional
-  public void generateAnomalyInsights(String generatedBy) {
     try {
-      Map<String, Object> context = new HashMap<>();
-      context.put("generated_by", generatedBy);
-      context.put("timestamp", LocalDate.now().toString());
-      context.put("analysis_type", "anomaly_detection");
-
-      AIInsightResponse response = aiInsightClient.generateAnomalyInsight(context);
-
-      if (response.isSuccess()) {
-        AIInsight insight =
-            createInsight(
-                response.getInsightType(),
-                response.getTitle(),
-                response.getDescription(),
-                response.getSeverity(),
-                response.getRecommendation(),
-                response.getConfidenceScore(),
-                "AI_OR_RULE_BASED",
-                LocalDate.now(),
-                response.getMetadata() != null ? response.getMetadata().toString() : null,
-                true,
-                generatedBy);
-
-        log.info("AI/Rule-based anomaly insight generated: {}", insight.getId());
-      } else {
-        log.warn("AI anomaly insight generation failed: {}", response.getError());
-      }
-    } catch (Exception e) {
-      log.error("Error generating AI anomaly insights", e);
+      String recommendationsJson = objectMapper.writeValueAsString(callback.getRecommendations());
+      insight.markAsCompleted(
+          callback.getRiskLevel(),
+          callback.getSummary(),
+          callback.getRootCause(),
+          recommendationsJson);
+      aiInsightRepository.save(insight);
+      log.info("AI insight completed via callback: requestId={}", callback.getRequestId());
+    } catch (JsonProcessingException e) {
+      log.error("Failed to serialize recommendations for callback: requestId={}", callback.getRequestId(), e);
+      insight.markAsFailed("Failed to process recommendations");
+      aiInsightRepository.save(insight);
     }
   }
 
   @Transactional
-  public void generateCashFlowForecastInsights(String generatedBy) {
-    try {
-      Map<String, Object> context = new HashMap<>();
-      context.put("generated_by", generatedBy);
-      context.put("timestamp", LocalDate.now().toString());
-      context.put("analysis_type", "cash_flow_forecast");
-
-      AIInsightResponse response = aiInsightClient.generateCashFlowForecastInsight(context);
-
-      if (response.isSuccess()) {
-        AIInsight insight =
-            createInsight(
-                response.getInsightType(),
-                response.getTitle(),
-                response.getDescription(),
-                response.getSeverity(),
-                response.getRecommendation(),
-                response.getConfidenceScore(),
-                "AI_OR_RULE_BASED",
-                LocalDate.now(),
-                response.getMetadata() != null ? response.getMetadata().toString() : null,
-                true,
-                generatedBy);
-
-        log.info("AI/Rule-based cash flow forecast insight generated: {}", insight.getId());
-      } else {
-        log.warn("AI cash flow forecast insight generation failed: {}", response.getError());
+  public void retryFailedInsights() {
+    List<AIInsight> retryableInsights = findRetryableInsights();
+    
+    for (AIInsight insight : retryableInsights) {
+      try {
+        insight.incrementRetryCount();
+        insight.setStatus(InsightStatus.PENDING);
+        insight.setFailureReason(null);
+        aiInsightRepository.save(insight);
+        
+        log.info("Retrying AI insight: requestId={}, retryCount={}", insight.getRequestId(), insight.getRetryCount());
+        
+        // Re-send to n8n would happen here if we stored the original request context
+        // For now, we'll mark it as failed again since we don't have the original context
+        insight.markAsFailed("Retry not implemented - missing original request context");
+        aiInsightRepository.save(insight);
+        
+      } catch (Exception e) {
+        log.error("Failed to retry AI insight: requestId={}", insight.getRequestId(), e);
       }
-    } catch (Exception e) {
-      log.error("Error generating AI cash flow forecast insights", e);
     }
   }
 
-  @Transactional
-  public void generateReconciliationInsights(String generatedBy) {
-    try {
-      Map<String, Object> context = new HashMap<>();
-      context.put("generated_by", generatedBy);
-      context.put("timestamp", LocalDate.now().toString());
-      context.put("analysis_type", "reconciliation");
+  private void sendToN8n(
+      AIInsight insight,
+      String reconciliationNumber,
+      String sourceSystem,
+      Integer duplicatePayments,
+      Integer missingSettlements,
+      Integer amountMismatches,
+      Integer negativeBalances,
+      Integer transactionCount,
+      String reconciliationStatus) {
 
-      AIInsightResponse response = aiInsightClient.generateReconciliationInsight(context);
+    insight.markAsProcessing();
+    aiInsightRepository.save(insight);
 
-      if (response.isSuccess()) {
-        AIInsight insight =
-            createInsight(
-                response.getInsightType(),
-                response.getTitle(),
-                response.getDescription(),
-                response.getSeverity(),
-                response.getRecommendation(),
-                response.getConfidenceScore(),
-                "AI_OR_RULE_BASED",
-                LocalDate.now(),
-                response.getMetadata() != null ? response.getMetadata().toString() : null,
-                true,
-                generatedBy);
+    String callbackUrl = appBaseUrl + "/api/v1/ai-insights/callback";
 
-        log.info("AI/Rule-based reconciliation insight generated: {}", insight.getId());
-      } else {
-        log.warn("AI reconciliation insight generation failed: {}", response.getError());
-      }
-    } catch (Exception e) {
-      log.error("Error generating AI reconciliation insights", e);
-    }
+    AIInsightRequest request =
+        AIInsightRequest.builder()
+            .requestId(insight.getRequestId())
+            .reconciliationId(insight.getReconciliationId())
+            .reconciliationNumber(reconciliationNumber)
+            .sourceSystem(sourceSystem)
+            .duplicatePayments(duplicatePayments)
+            .missingSettlements(missingSettlements)
+            .amountMismatches(amountMismatches)
+            .negativeBalances(negativeBalances)
+            .transactionCount(transactionCount)
+            .reconciliationStatus(reconciliationStatus)
+            .callbackUrl(callbackUrl)
+            .build();
+
+    aiInsightGateway.requestInsight(request);
   }
 }

@@ -4,10 +4,12 @@ import com.finance.smartLedger.ledger.application.AccountService;
 import com.finance.smartLedger.ledger.domain.Account;
 import com.finance.smartLedger.reconciliation.domain.MatchStatus;
 import com.finance.smartLedger.reconciliation.domain.Reconciliation;
+import com.finance.smartLedger.reconciliation.domain.ReconciliationCompleted;
 import com.finance.smartLedger.reconciliation.domain.ReconciliationItem;
 import com.finance.smartLedger.reconciliation.domain.ReconciliationStatus;
 import com.finance.smartLedger.reconciliation.infrastructure.persistence.ReconciliationItemRepository;
 import com.finance.smartLedger.reconciliation.infrastructure.persistence.ReconciliationRepository;
+import com.finance.smartLedger.shared.domain.EventPublisher;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +26,7 @@ public class ReconciliationService {
   private final ReconciliationRepository reconciliationRepository;
   private final ReconciliationItemRepository reconciliationItemRepository;
   private final AccountService accountService;
+  private final EventPublisher eventPublisher;
 
   @Transactional
   public Reconciliation createReconciliation(
@@ -162,7 +165,31 @@ public class ReconciliationService {
       reconciliation.markPartiallyMatched(updatedBy);
     }
 
-    return reconciliationRepository.save(reconciliation);
+    Reconciliation savedReconciliation = reconciliationRepository.save(reconciliation);
+
+    // Publish event for AI insight generation
+    try {
+      ReconciliationCompleted event = new ReconciliationCompleted(
+          savedReconciliation.getId(),
+          savedReconciliation.getReconciliationNumber(),
+          savedReconciliation.getSourceSystem(),
+          savedReconciliation.getTotalExpectedAmount(),
+          savedReconciliation.getTotalActualAmount(),
+          savedReconciliation.getVarianceAmount(),
+          savedReconciliation.getStatus().name(),
+          0, // duplicatePayments - would be calculated from rules engine
+          0, // missingSettlements - would be calculated from rules engine
+          0, // amountMismatches - would be calculated from rules engine
+          0, // negativeBalances - would be calculated from rules engine
+          savedReconciliation.getItems().size()
+      );
+      eventPublisher.publish(event);
+    } catch (Exception e) {
+      // Don't fail reconciliation if event publishing fails
+      // Log but continue
+    }
+
+    return savedReconciliation;
   }
 
   @Transactional

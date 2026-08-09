@@ -18,10 +18,9 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import com.finance.smartLedger.test.configuration.TestDatabaseConfiguration;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 @SpringBootTest
@@ -29,19 +28,9 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 @Disabled("Docker not available on this system")
 class FeeAccountingServiceIntegrationTest {
 
-  @Container
-  static PostgreSQLContainer<?> postgres =
-      new PostgreSQLContainer<>("postgres:16-alpine")
-          .withDatabaseName("smartledger_test")
-          .withUsername("test")
-          .withPassword("test");
-
   @DynamicPropertySource
   static void postgresProperties(DynamicPropertyRegistry registry) {
-    registry.add("spring.datasource.url", postgres::getJdbcUrl);
-    registry.add("spring.datasource.username", postgres::getUsername);
-    registry.add("spring.datasource.password", postgres::getPassword);
-    registry.add("spring.jpa.hibernate.ddl-auto", () -> "create-drop");
+    TestDatabaseConfiguration.configureDatabase(registry);
   }
 
   @Autowired private FeeAccountingService feeAccountingService;

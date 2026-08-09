@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.finance.smartLedger.ledger.domain.Account;
 import com.finance.smartLedger.ledger.domain.AccountType;
 import com.finance.smartLedger.ledger.infrastructure.persistence.AccountRepository;
+import com.finance.smartLedger.shared.domain.EventPublisher;
 import com.finance.smartLedger.shared.valueobject.Money;
 import java.math.BigDecimal;
 import java.util.List;
@@ -24,6 +25,8 @@ class AccountServiceTest {
 
   @Mock private AccountRepository accountRepository;
 
+  @Mock private EventPublisher eventPublisher;
+
   @InjectMocks private AccountService accountService;
 
   private Account testAccount;
@@ -39,6 +42,10 @@ class AccountServiceTest {
             .isActive(true)
             .build();
     testAccount.setId(testId);
+    testAccount.setAccountNumber(
+        com.finance.smartLedger.ledger.domain.valueobject.AccountNumber.of("10000001"));
+    testAccount.setAccountCode(
+        com.finance.smartLedger.ledger.domain.valueobject.AccountCode.of("GL001"));
     testAccount.setBalance(
         new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
             com.finance.smartLedger.shared.valueobject.Money.of(

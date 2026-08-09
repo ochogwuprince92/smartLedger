@@ -2,7 +2,9 @@ package com.finance.smartLedger.ai.domain;
 
 import com.finance.smartLedger.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -18,82 +20,82 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode(callSuper = true)
 public class AIInsight extends AuditableEntity {
 
+  @Column(name = "request_id", unique = true, nullable = false)
+  private String requestId;
+
+  @Column(name = "reconciliation_id")
+  private UUID reconciliationId;
+
+  @Enumerated(EnumType.STRING)
   @Column(name = "insight_type", nullable = false, length = 50)
-  private String insightType;
-
-  @Column(name = "title", nullable = false, length = 200)
-  private String title;
-
-  @Column(name = "description", columnDefinition = "TEXT")
-  private String description;
-
-  @Column(name = "severity", length = 20)
-  private String severity;
+  private AIInsightType insightType;
 
   @Enumerated(EnumType.STRING)
   @Column(name = "status", nullable = false, length = 30)
   @Builder.Default
   private InsightStatus status = InsightStatus.PENDING;
 
-  @Column(name = "recommendation", columnDefinition = "TEXT")
-  private String recommendation;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "risk_level", length = 20)
+  private RiskLevel riskLevel;
 
-  @Column(name = "confidence_score")
-  private Double confidenceScore;
+  @Column(name = "summary", columnDefinition = "TEXT")
+  private String summary;
 
-  @Column(name = "data_source", length = 100)
-  private String dataSource;
+  @Column(name = "root_cause", columnDefinition = "TEXT")
+  private String rootCause;
 
-  @Column(name = "reference_date")
-  private LocalDate referenceDate;
+  @Column(name = "recommendations", columnDefinition = "JSONB")
+  private String recommendations;
 
-  @Column(name = "metadata", columnDefinition = "JSONB")
-  private String metadata;
+  @Column(name = "anomaly_count")
+  private Integer anomalyCount;
 
-  @Column(name = "is_actionable", nullable = false)
+  @Column(name = "requested_at")
+  private LocalDateTime requestedAt;
+
+  @Column(name = "completed_at")
+  private LocalDateTime completedAt;
+
+  @Column(name = "failure_reason", columnDefinition = "TEXT")
+  private String failureReason;
+
+  @Column(name = "retry_count")
   @Builder.Default
-  private Boolean isActionable = true;
+  private Integer retryCount = 0;
 
-  @Column(name = "is_reviewed", nullable = false)
+  @Column(name = "max_retries")
   @Builder.Default
-  private Boolean isReviewed = false;
+  private Integer maxRetries = 3;
 
-  @Column(name = "reviewed_by")
-  private String reviewedBy;
-
-  @Column(name = "reviewed_at")
-  private LocalDate reviewedAt;
-
-  @Column(name = "is_resolved", nullable = false)
-  @Builder.Default
-  private Boolean isResolved = false;
-
-  @Column(name = "resolved_by")
-  private String resolvedBy;
-
-  @Column(name = "resolved_at")
-  private LocalDate resolvedAt;
-
-  public void markAsReviewed(String reviewedBy) {
-    this.isReviewed = true;
-    this.reviewedBy = reviewedBy;
-    this.reviewedAt = LocalDate.now();
-    this.setUpdatedBy(reviewedBy);
+  public void markAsProcessing() {
+    this.status = InsightStatus.PROCESSING;
+    this.setUpdatedBy("SYSTEM");
   }
 
-  public void markAsResolved(String resolvedBy) {
-    this.isResolved = true;
-    this.resolvedBy = resolvedBy;
-    this.resolvedAt = LocalDate.now();
-    this.status = InsightStatus.RESOLVED;
-    this.setUpdatedBy(resolvedBy);
+  public void markAsCompleted(RiskLevel riskLevel, String summary, String rootCause, String recommendations) {
+    this.status = InsightStatus.COMPLETED;
+    this.riskLevel = riskLevel;
+    this.summary = summary;
+    this.rootCause = rootCause;
+    this.recommendations = recommendations;
+    this.completedAt = LocalDateTime.now();
+    this.setUpdatedBy("SYSTEM");
   }
 
-  public void dismiss(String dismissedBy) {
-    this.status = InsightStatus.DISMISSED;
-    this.isReviewed = true;
-    this.reviewedBy = dismissedBy;
-    this.reviewedAt = LocalDate.now();
-    this.setUpdatedBy(dismissedBy);
+  public void markAsFailed(String failureReason) {
+    this.status = InsightStatus.FAILED;
+    this.failureReason = failureReason;
+    this.completedAt = LocalDateTime.now();
+    this.setUpdatedBy("SYSTEM");
+  }
+
+  public void incrementRetryCount() {
+    this.retryCount++;
+    this.setUpdatedBy("SYSTEM");
+  }
+
+  public boolean canRetry() {
+    return this.status == InsightStatus.FAILED && this.retryCount < this.maxRetries;
   }
 }

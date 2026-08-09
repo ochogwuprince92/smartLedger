@@ -10,14 +10,28 @@ import javax.sql.DataSource;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
+import com.finance.smartLedger.test.configuration.TestDatabaseConfiguration;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.springframework.test.context.TestPropertySource;
+import org.junit.jupiter.api.Disabled;
 
 @SpringBootTest
-@ActiveProfiles("local")
-@TestPropertySource(
-    properties = {"spring.flyway.enabled=true", "spring.flyway.locations=classpath:db/migration"})
+@TestPropertySource(properties = {
+    "spring.data.redis.enabled=false",
+    "spring.cache.type=none",
+    "app.scheduled.enabled=false",
+    "app.data-loader.enabled=false"
+})
+@Disabled("Docker not available on this system")
+@Testcontainers
 class ManualMigrationTest {
+
+  @DynamicPropertySource
+  static void postgresProperties(DynamicPropertyRegistry registry) {
+    TestDatabaseConfiguration.configureDatabase(registry);
+  }
 
   @Autowired private DataSource dataSource;
 

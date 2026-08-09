@@ -5,17 +5,36 @@ spring:
     password: ogwaa123
     driver-class-name: org.postgresql.Driver
 
+  jpa:
+    hibernate:
+      ddl-auto: update
+
+  flyway:
+    enabled: false
+
   data:
     redis:
       host: localhost
       port: 6379
+
+app:
+  email:
+    enabled: false
+  scheduled:
+    enabled: false
+
+payment:
+  gateway:
+    paystack:
+      secret-key: test_secret_key
+      public-key: test_public_key
+    paypal:
+      client-id: test_client_id
+      client-secret: test_client_secret
+      mode: sandbox
 
 logging:
   level:
     com.finance.smartLedger: DEBUG
     org.springframework.security: DEBUG
     org.hibernate.SQL: DEBUG
-
-app:
-  scheduled:
-    enabled: false

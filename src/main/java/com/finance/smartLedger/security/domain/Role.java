@@ -80,6 +80,12 @@ public class Role extends AuditableEntity {
   public void removeChildRole(Role childRole) {
     this.childRoles.remove(childRole);
     childRole.parentRoles.remove(this);
+    // If child has no parents after removal, reset its level to 0
+    if (childRole.parentRoles.isEmpty()) {
+      childRole.level = 0;
+    } else {
+      childRole.updateHierarchyLevels();
+    }
     updateHierarchyLevels();
   }
 
@@ -118,9 +124,11 @@ public class Role extends AuditableEntity {
 
   private int calculateLevel() {
     if (parentRoles.isEmpty()) {
+      this.level = 0;
       return 0;
     }
     int maxParentLevel = parentRoles.stream().mapToInt(Role::getLevel).max().orElse(0);
+    this.level = maxParentLevel + 1;
     return maxParentLevel + 1;
   }
 }

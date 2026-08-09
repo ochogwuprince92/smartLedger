@@ -1,0 +1,77 @@
+spring:
+  application:
+    name: smartLedger
+
+  datasource:
+    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/smartledger_test}
+    username: ${DATASOURCE_USERNAME:postgres}
+    password: ${DATASOURCE_PASSWORD:postgres}
+    driver-class-name: org.postgresql.Driver
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  # Disable Redis for tests
+  data:
+    redis:
+      enabled: false
+  
+  # Disable cache for tests
+  cache:
+    type: none
+
+  # Disable scheduled tasks for tests
+  task:
+    scheduling:
+      pool:
+        size: 1
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: 8081
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+app:
+  # Disable scheduled tasks for tests
+  scheduled:
+    enabled: false
+    pool-size: 1
+  # Disable data loader for tests
+  data-loader:
+    enabled: false
+  base-url: ${APP_BASE_URL:http://localhost:8081}

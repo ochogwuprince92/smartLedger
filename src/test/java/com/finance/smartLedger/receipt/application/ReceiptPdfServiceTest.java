@@ -42,7 +42,6 @@ class ReceiptPdfServiceTest {
   void setUp() {
     receipt =
         Receipt.builder()
-            .id(RECEIPT_ID)
             .receiptNumber(RECEIPT_NUMBER)
             .paymentId(PAYMENT_ID)
             .receiptDate(LocalDateTime.now())
@@ -56,10 +55,12 @@ class ReceiptPdfServiceTest {
             .paymentMethod("CREDIT_CARD")
             .paymentReference(PAYMENT_NUMBER)
             .build();
+    receipt.setId(RECEIPT_ID);
 
     payment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             LocalDateTime.now(),
             PaymentMethod.CREDIT_CARD,
             new BigDecimal("100.00"),

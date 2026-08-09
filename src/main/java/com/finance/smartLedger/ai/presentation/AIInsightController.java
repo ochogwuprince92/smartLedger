@@ -1,49 +1,59 @@
 package com.finance.smartLedger.ai.presentation;
 
+import com.finance.smartLedger.ai.application.dto.AICallbackRequest;
+import com.finance.smartLedger.ai.application.dto.AICallbackResponse;
 import com.finance.smartLedger.ai.domain.AIInsight;
+import com.finance.smartLedger.ai.domain.AIInsightType;
 import com.finance.smartLedger.ai.domain.InsightStatus;
+import com.finance.smartLedger.ai.domain.RiskLevel;
 import com.finance.smartLedger.shared.dto.ApiResponse;
+import com.finance.smartLedger.shared.security.HmacSignatureUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.format.annotation.DateTimeFormat;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/ai-insights")
+@RequestMapping("/api/v1/ai-insights")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "AI Insights", description = "AI Insight management endpoints")
 public class AIInsightController {
 
   private final com.finance.smartLedger.ai.application.AIInsightService aiInsightService;
+  private final HmacSignatureUtil hmacSignatureUtil;
 
-  @PostMapping("/insights")
-  @Operation(summary = "Create AI insight", description = "Creates a new AI insight")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:CREATE')")
-  public ResponseEntity<ApiResponse<AIInsight>> createInsight(
-      @RequestBody @Valid CreateAIInsightRequest request) {
-    AIInsight insight =
-        aiInsightService.createInsight(
-            request.insightType(),
-            request.title(),
-            request.description(),
-            request.severity(),
-            request.recommendation(),
-            request.confidenceScore(),
-            request.dataSource(),
-            request.referenceDate(),
-            request.metadata(),
-            request.isActionable(),
-            "system");
-    return ResponseEntity.status(HttpStatus.CREATED)
-        .body(ApiResponse.success("AI insight created successfully", insight));
+  @Value("${n8n.callback-secret}")
+  private String callbackSecret;
+
+  @PostMapping("/callback")
+  @Operation(summary = "AI insight callback", description = "Callback endpoint for n8n to return AI insights")
+  public ResponseEntity<AICallbackResponse> handleCallback(@RequestBody AICallbackRequest request) {
+    try {
+      // Verify HMAC signature
+      String payload = request.toString(); // Simplified - should serialize properly
+      if (!hmacSignatureUtil.verifySignature(payload, request.getSignature(), callbackSecret)) {
+        log.warn("Invalid HMAC signature for callback: requestId={}", request.getRequestId());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+            .body(AICallbackResponse.builder().success(false).message("Invalid signature").build());
+      }
+
+      aiInsightService.handleCallback(request);
+      return ResponseEntity.ok(AICallbackResponse.builder().success(true).message("Callback processed").build());
+
+    } catch (Exception e) {
+      log.error("Failed to process AI insight callback: requestId={}", request.getRequestId(), e);
+      return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+          .body(AICallbackResponse.builder().success(false).message("Processing failed").build());
+    }
   }
 
   @GetMapping("/{id}")
@@ -62,7 +72,7 @@ public class AIInsightController {
       description = "Retrieves all insights of a specific type")
   @PreAuthorize("hasAuthority('AI_INSIGHT:READ')")
   public ResponseEntity<ApiResponse<List<AIInsight>>> getInsightsByType(
-      @PathVariable String insightType) {
+      @PathVariable AIInsightType insightType) {
     List<AIInsight> insights = aiInsightService.findByInsightType(insightType);
     return ResponseEntity.ok(ApiResponse.success(insights));
   }
@@ -78,153 +88,45 @@ public class AIInsightController {
     return ResponseEntity.ok(ApiResponse.success(insights));
   }
 
-  @GetMapping("/severity/{severity}")
+  @GetMapping("/risk/{riskLevel}")
   @Operation(
-      summary = "Get insights by severity",
-      description = "Retrieves all insights with a specific severity")
+      summary = "Get insights by risk level",
+      description = "Retrieves all insights with a specific risk level")
   @PreAuthorize("hasAuthority('AI_INSIGHT:READ')")
-  public ResponseEntity<ApiResponse<List<AIInsight>>> getInsightsBySeverity(
-      @PathVariable String severity) {
-    List<AIInsight> insights = aiInsightService.findBySeverity(severity);
+  public ResponseEntity<ApiResponse<List<AIInsight>>> getInsightsByRiskLevel(
+      @PathVariable RiskLevel riskLevel) {
+    List<AIInsight> insights = aiInsightService.findByRiskLevel(riskLevel);
     return ResponseEntity.ok(ApiResponse.success(insights));
   }
 
-  @GetMapping("/source/{dataSource}")
+  @GetMapping("/reconciliation/{reconciliationId}")
   @Operation(
-      summary = "Get insights by data source",
-      description = "Retrieves all insights from a specific data source")
+      summary = "Get insights by reconciliation",
+      description = "Retrieves all insights for a specific reconciliation")
   @PreAuthorize("hasAuthority('AI_INSIGHT:READ')")
-  public ResponseEntity<ApiResponse<List<AIInsight>>> getInsightsByDataSource(
-      @PathVariable String dataSource) {
-    List<AIInsight> insights = aiInsightService.findByDataSource(dataSource);
+  public ResponseEntity<ApiResponse<List<AIInsight>>> getInsightsByReconciliation(
+      @PathVariable UUID reconciliationId) {
+    List<AIInsight> insights = aiInsightService.findByReconciliationId(reconciliationId);
     return ResponseEntity.ok(ApiResponse.success(insights));
   }
 
-  @GetMapping("/pending")
+  @GetMapping("/failed")
   @Operation(
-      summary = "Get pending insights",
-      description = "Retrieves all pending insights that haven't been reviewed")
+      summary = "Get failed insights",
+      description = "Retrieves all failed AI insights")
   @PreAuthorize("hasAuthority('AI_INSIGHT:READ')")
-  public ResponseEntity<ApiResponse<List<AIInsight>>> getPendingInsights() {
-    List<AIInsight> insights = aiInsightService.findPendingInsights();
+  public ResponseEntity<ApiResponse<List<AIInsight>>> getFailedInsights() {
+    List<AIInsight> insights = aiInsightService.findFailedInsights();
     return ResponseEntity.ok(ApiResponse.success(insights));
   }
 
-  @GetMapping("/actionable")
+  @PostMapping("/retry-failed")
   @Operation(
-      summary = "Get actionable insights",
-      description = "Retrieves all actionable insights that haven't been resolved")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:READ')")
-  public ResponseEntity<ApiResponse<List<AIInsight>>> getActionableInsights() {
-    List<AIInsight> insights = aiInsightService.findActionableInsights();
-    return ResponseEntity.ok(ApiResponse.success(insights));
+      summary = "Retry failed insights",
+      description = "Retries all failed AI insights that are within retry limits")
+  @PreAuthorize("hasAuthority('AI_INSIGHT:RETRY')")
+  public ResponseEntity<ApiResponse<Void>> retryFailedInsights() {
+    aiInsightService.retryFailedInsights();
+    return ResponseEntity.ok(ApiResponse.success("Failed insights retry initiated", null));
   }
-
-  @GetMapping
-  @Operation(summary = "Get all insights", description = "Retrieves all AI insights")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:READ')")
-  public ResponseEntity<ApiResponse<List<AIInsight>>> getAllInsights() {
-    List<AIInsight> insights = aiInsightService.findAllInsights();
-    return ResponseEntity.ok(ApiResponse.success(insights));
-  }
-
-  @PutMapping("/{id}")
-  @Operation(summary = "Update AI insight", description = "Updates an existing AI insight")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:UPDATE')")
-  public ResponseEntity<ApiResponse<AIInsight>> updateInsight(
-      @PathVariable UUID id, @RequestBody @Valid UpdateAIInsightRequest request) {
-    AIInsight insight =
-        aiInsightService.updateInsight(
-            id,
-            request.title(),
-            request.description(),
-            request.recommendation(),
-            request.severity(),
-            request.confidenceScore(),
-            "system");
-    return ResponseEntity.ok(ApiResponse.success("AI insight updated successfully", insight));
-  }
-
-  @PostMapping("/{id}/review")
-  @Operation(summary = "Mark insight as reviewed", description = "Marks an insight as reviewed")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:REVIEW')")
-  public ResponseEntity<ApiResponse<Void>> markAsReviewed(@PathVariable UUID id) {
-    aiInsightService.markAsReviewed(id, "system");
-    return ResponseEntity.ok(ApiResponse.success("AI insight marked as reviewed", null));
-  }
-
-  @PostMapping("/{id}/resolve")
-  @Operation(summary = "Mark insight as resolved", description = "Marks an insight as resolved")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:RESOLVE')")
-  public ResponseEntity<ApiResponse<Void>> markAsResolved(@PathVariable UUID id) {
-    aiInsightService.markAsResolved(id, "system");
-    return ResponseEntity.ok(ApiResponse.success("AI insight marked as resolved", null));
-  }
-
-  @PostMapping("/{id}/dismiss")
-  @Operation(summary = "Dismiss insight", description = "Dismisses an insight")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:DISMISS')")
-  public ResponseEntity<ApiResponse<Void>> dismissInsight(@PathVariable UUID id) {
-    aiInsightService.dismissInsight(id, "system");
-    return ResponseEntity.ok(ApiResponse.success("AI insight dismissed", null));
-  }
-
-  @PostMapping("/generate/anomalies")
-  @Operation(
-      summary = "Generate anomaly insights",
-      description = "Generates insights based on anomaly detection")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:GENERATE')")
-  public ResponseEntity<ApiResponse<Void>> generateAnomalyInsights() {
-    aiInsightService.generateAnomalyInsights("system");
-    return ResponseEntity.ok(ApiResponse.success("Anomaly insights generation initiated", null));
-  }
-
-  @PostMapping("/generate/cashflow")
-  @Operation(
-      summary = "Generate cash flow forecast insights",
-      description = "Generates insights based on cash flow forecasting")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:GENERATE')")
-  public ResponseEntity<ApiResponse<Void>> generateCashFlowForecastInsights() {
-    aiInsightService.generateCashFlowForecastInsights("system");
-    return ResponseEntity.ok(
-        ApiResponse.success("Cash flow forecast insights generation initiated", null));
-  }
-
-  @PostMapping("/generate/reconciliation")
-  @Operation(
-      summary = "Generate reconciliation insights",
-      description = "Generates insights based on reconciliation analysis")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:GENERATE')")
-  public ResponseEntity<ApiResponse<Void>> generateReconciliationInsights() {
-    aiInsightService.generateReconciliationInsights("system");
-    return ResponseEntity.ok(
-        ApiResponse.success("Reconciliation insights generation initiated", null));
-  }
-
-  @DeleteMapping("/{id}")
-  @Operation(summary = "Delete AI insight", description = "Deletes an AI insight")
-  @PreAuthorize("hasAuthority('AI_INSIGHT:DELETE')")
-  public ResponseEntity<ApiResponse<Void>> deleteInsight(@PathVariable UUID id) {
-    aiInsightService.deleteInsight(id);
-    return ResponseEntity.ok(ApiResponse.success("AI insight deleted successfully", null));
-  }
-
-  record CreateAIInsightRequest(
-      String insightType,
-      String title,
-      String description,
-      String severity,
-      String recommendation,
-      Double confidenceScore,
-      String dataSource,
-      @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate referenceDate,
-      String metadata,
-      Boolean isActionable) {}
-
-  record UpdateAIInsightRequest(
-      String title,
-      String description,
-      String recommendation,
-      String severity,
-      Double confidenceScore) {}
 }

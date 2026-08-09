@@ -19,7 +19,7 @@ public class NotificationService {
 
   private final NotificationRepository notificationRepository;
   private final com.finance.smartLedger.audit.application.AuditService auditService;
-  private final com.finance.smartLedger.notification.infrastructure.email.EmailService emailService;
+  private final java.util.Optional<com.finance.smartLedger.notification.infrastructure.email.EmailService> emailService;
 
   @Transactional
   public Notification createNotification(
@@ -70,8 +70,8 @@ public class NotificationService {
     if (notification.getChannel() == NotificationChannel.EMAIL
         && notification.getRecipientEmail() != null) {
       try {
-        emailService.sendEmail(
-            notification.getRecipientEmail(), notification.getSubject(), notification.getMessage());
+        emailService.ifPresent(es -> es.sendEmail(
+            notification.getRecipientEmail(), notification.getSubject(), notification.getMessage()));
       } catch (Exception e) {
         // Mark as failed if email sending fails
         notification.markAsFailed(e.getMessage());

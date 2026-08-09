@@ -125,7 +125,22 @@ public class ReconciliationWorkflowService {
     context.put("status", reconciliation.getStatus());
 
     try {
-      aiInsightService.generateReconciliationInsights(executedBy);
+      BigDecimal totalVariance = (BigDecimal) varianceReport.get("total_variance");
+      if (totalVariance == null) {
+        totalVariance = BigDecimal.ZERO;
+      }
+      
+      aiInsightService.createReconciliationInsight(
+          reconciliation.getId(),
+          reconciliation.getReconciliationNumber(),
+          "LEDGER",
+          reviewItems.size(),
+          0, // missingSettlements - not available in context
+          0, // amountMismatches - not available in context
+          0, // negativeBalances - not available in context
+          0, // transactionCount - not available in context
+          reconciliation.getStatus().name(),
+          executedBy);
       log.info("AI reconciliation insights generated for: {}", reconciliation.getId());
     } catch (Exception e) {
       log.error("Failed to generate AI reconciliation insights", e);

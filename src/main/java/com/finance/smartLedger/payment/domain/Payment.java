@@ -4,6 +4,7 @@ import com.finance.smartLedger.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,6 +30,9 @@ public class Payment extends AuditableEntity {
 
   @Column(name = "idempotency_key", unique = true, length = 100)
   private String idempotencyKey;
+
+  @Column(name = "invoice_id")
+  private UUID invoiceId;
 
   @Column(name = "payment_date", nullable = false)
   private LocalDateTime paymentDate;
@@ -89,6 +93,7 @@ public class Payment extends AuditableEntity {
   public Payment(
       String paymentNumber,
       String idempotencyKey,
+      UUID invoiceId,
       LocalDateTime paymentDate,
       PaymentMethod paymentMethod,
       BigDecimal amount,
@@ -99,6 +104,7 @@ public class Payment extends AuditableEntity {
       String createdBy) {
     this.paymentNumber = paymentNumber;
     this.idempotencyKey = idempotencyKey;
+    this.invoiceId = invoiceId;
     this.paymentDate = paymentDate;
     this.paymentMethod = paymentMethod;
     this.status = PaymentStatus.PENDING;

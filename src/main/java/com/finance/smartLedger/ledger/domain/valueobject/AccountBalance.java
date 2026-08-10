@@ -48,21 +48,33 @@ public class AccountBalance {
     return new AccountBalance(Money.zero(currencyCode));
   }
 
-  public void debit(Money amount) {
+  public void debit(Money amount, boolean isDebitNormal) {
     if (!amount.getCurrencyCode().equals(currentBalance.getCurrencyCode())) {
       throw new IllegalArgumentException("Currency mismatch for debit operation");
     }
     this.debitBalance = debitBalance.add(amount);
-    this.currentBalance = currentBalance.add(amount);
+    // For debit-normal accounts (ASSET, EXPENSE, LOSS): debit increases current balance
+    // For credit-normal accounts (LIABILITY, EQUITY, REVENUE, GAIN): debit decreases current balance
+    if (isDebitNormal) {
+      this.currentBalance = currentBalance.add(amount);
+    } else {
+      this.currentBalance = currentBalance.subtract(amount);
+    }
     this.lastUpdated = LocalDateTime.now();
   }
 
-  public void credit(Money amount) {
+  public void credit(Money amount, boolean isDebitNormal) {
     if (!amount.getCurrencyCode().equals(currentBalance.getCurrencyCode())) {
       throw new IllegalArgumentException("Currency mismatch for credit operation");
     }
     this.creditBalance = creditBalance.add(amount);
-    this.currentBalance = currentBalance.subtract(amount);
+    // For debit-normal accounts (ASSET, EXPENSE, LOSS): credit decreases current balance
+    // For credit-normal accounts (LIABILITY, EQUITY, REVENUE, GAIN): credit increases current balance
+    if (isDebitNormal) {
+      this.currentBalance = currentBalance.subtract(amount);
+    } else {
+      this.currentBalance = currentBalance.add(amount);
+    }
     this.lastUpdated = LocalDateTime.now();
   }
 

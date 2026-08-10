@@ -1,6 +1,7 @@
 package com.finance.smartLedger.payment.application;
 
 import com.finance.smartLedger.payment.domain.Payment;
+import com.finance.smartLedger.payment.domain.PaymentCompleted;
 import com.finance.smartLedger.payment.domain.PaymentMethod;
 import com.finance.smartLedger.payment.domain.PaymentStatus;
 import com.finance.smartLedger.payment.infrastructure.persistence.PaymentRepository;
@@ -23,11 +24,13 @@ public class PaymentService {
   private final com.finance.smartLedger.notification.application.NotificationService
       notificationService;
   private final com.finance.smartLedger.audit.application.AuditService auditService;
+  private final com.finance.smartLedger.shared.domain.EventPublisher eventPublisher;
 
   @Transactional
   public Payment createPayment(
       String paymentNumber,
       String idempotencyKey,
+      UUID invoiceId,
       LocalDateTime paymentDate,
       PaymentMethod paymentMethod,
       BigDecimal amount,
@@ -56,6 +59,7 @@ public class PaymentService {
         new Payment(
             paymentNumber,
             idempotencyKey,
+            invoiceId,
             paymentDate,
             paymentMethod,
             amount,
@@ -146,6 +150,18 @@ public class PaymentService {
         oldStatus,
         savedPayment.getStatus().name(),
         updatedBy);
+
+    // Publish PaymentCompleted event for fee payment integration
+    PaymentCompleted paymentCompletedEvent =
+        new PaymentCompleted(
+            savedPayment.getId(),
+            savedPayment.getInvoiceId(),
+            savedPayment.getAmount(),
+            savedPayment.getCurrencyCode(),
+            savedPayment.getPaymentMethod().name(),
+            savedPayment.getPaymentDate(),
+            savedPayment.getPayerName());
+    eventPublisher.publish(paymentCompletedEvent);
 
     // Record the payment transaction in the ledger
     paymentAccountingService.recordPayment(savedPayment);

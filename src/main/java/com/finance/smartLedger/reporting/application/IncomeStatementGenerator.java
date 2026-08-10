@@ -1,6 +1,10 @@
 package com.finance.smartLedger.reporting.application;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.finance.smartLedger.journal.application.JournalEntryService;
+import com.finance.smartLedger.journal.domain.DebitCredit;
+import com.finance.smartLedger.journal.domain.JournalEntry;
+import com.finance.smartLedger.journal.domain.JournalLineItem;
 import com.finance.smartLedger.ledger.application.AccountService;
 import com.finance.smartLedger.ledger.domain.Account;
 import com.finance.smartLedger.ledger.domain.AccountType;
@@ -9,6 +13,8 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -17,12 +23,29 @@ import org.springframework.stereotype.Component;
 public class IncomeStatementGenerator {
 
   private final AccountService accountService;
+  private final JournalEntryService journalEntryService;
   private final ObjectMapper objectMapper;
 
   public String generateIncomeStatement(
       LocalDateTime periodStartDate, LocalDateTime periodEndDate, String currencyCode)
       throws Exception {
     List<Account> allAccounts = accountService.findActiveAccounts();
+
+    // Get journal entries within the period
+    List<JournalEntry> journalEntriesInPeriod =
+        journalEntryService.findByEntryDateBetween(periodStartDate, periodEndDate);
+
+    // Filter to only posted entries
+    List<JournalEntry> postedEntries =
+        journalEntriesInPeriod.stream()
+            .filter(JournalEntry::getPosted)
+            .collect(Collectors.toList());
+
+    // Collect all line items from posted entries
+    List<JournalLineItem> allLineItems =
+        postedEntries.stream()
+            .flatMap(entry -> entry.getLineItems().stream())
+            .collect(Collectors.toList());
 
     BigDecimal totalRevenue = BigDecimal.ZERO;
     BigDecimal totalExpenses = BigDecimal.ZERO;
@@ -39,19 +62,62 @@ public class IncomeStatementGenerator {
     Map<String, Object> revenues = new HashMap<>();
     Map<String, Object> expenses = new HashMap<>();
 
+    // Calculate period-specific balances by summing journal line items
+    Map<UUID, BigDecimal> accountPeriodBalances = new HashMap<>();
+
+    for (JournalLineItem lineItem : allLineItems) {
+      UUID accountId = lineItem.getAccountId();
+      BigDecimal amount = lineItem.getAmount().getAmount();
+
+      // For revenue accounts: credits increase revenue, debits decrease
+      // For expense accounts: debits increase expense, credits decrease
+      Account account =
+          allAccounts.stream()
+              .filter(a -> a.getId().equals(accountId))
+              .findFirst()
+              .orElse(null);
+
+      if (account == null) continue;
+      if (!account.getBalance().getCurrentBalance().getCurrencyCode().equals(currencyCode)) {
+        continue;
+      }
+
+      BigDecimal currentBalance = accountPeriodBalances.getOrDefault(accountId, BigDecimal.ZERO);
+
+      if (account.getAccountType() == AccountType.REVENUE) {
+        // Revenue is credit-normal: credit adds, debit subtracts
+        if (lineItem.getDebitCredit() == DebitCredit.CREDIT) {
+          currentBalance = currentBalance.add(amount);
+        } else {
+          currentBalance = currentBalance.subtract(amount);
+        }
+      } else if (account.getAccountType() == AccountType.EXPENSE) {
+        // Expense is debit-normal: debit adds, credit subtracts
+        if (lineItem.getDebitCredit() == DebitCredit.DEBIT) {
+          currentBalance = currentBalance.add(amount);
+        } else {
+          currentBalance = currentBalance.subtract(amount);
+        }
+      }
+
+      accountPeriodBalances.put(accountId, currentBalance);
+    }
+
+    // Build revenue and expense maps from period balances
     for (Account account : allAccounts) {
       if (!account.getBalance().getCurrentBalance().getCurrencyCode().equals(currencyCode)) {
         continue;
       }
 
-      BigDecimal balance = account.getBalance().getCurrentBalance().getAmount();
+      UUID accountId = account.getId();
+      BigDecimal periodBalance = accountPeriodBalances.getOrDefault(accountId, BigDecimal.ZERO);
 
       if (account.getAccountType() == AccountType.REVENUE) {
-        revenues.put(account.getAccountNumber().getValue(), accountBalanceMap(account, balance));
-        totalRevenue = totalRevenue.add(balance);
+        revenues.put(account.getAccountNumber().getValue(), accountBalanceMap(account, periodBalance));
+        totalRevenue = totalRevenue.add(periodBalance);
       } else if (account.getAccountType() == AccountType.EXPENSE) {
-        expenses.put(account.getAccountNumber().getValue(), accountBalanceMap(account, balance));
-        totalExpenses = totalExpenses.add(balance);
+        expenses.put(account.getAccountNumber().getValue(), accountBalanceMap(account, periodBalance));
+        totalExpenses = totalExpenses.add(periodBalance);
       }
     }
 

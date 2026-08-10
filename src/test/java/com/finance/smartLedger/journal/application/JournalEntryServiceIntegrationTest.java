@@ -106,25 +106,32 @@ class JournalEntryServiceIntegrationTest {
   }
 
   @Test
-  void createJournalEntry_DuplicateEntryNumber_ThrowsException() {
-    journalEntryService.createJournalEntry(
-        "JE-001",
-        LocalDateTime.now(),
-        JournalEntryType.MANUAL,
-        "REF-001",
-        "Test journal entry",
-        "test-user");
+  void createJournalEntry_DuplicateEntryNumber_ReturnsExistingEntry() {
+    // RED: This test expects idempotent behavior - duplicate entryNumber should return existing entry
+    // Currently this will fail because the implementation throws IllegalArgumentException
+    
+    JournalEntry firstEntry =
+        journalEntryService.createJournalEntry(
+            "JE-001",
+            LocalDateTime.now(),
+            JournalEntryType.MANUAL,
+            "REF-001",
+            "Test journal entry",
+            "test-user");
 
-    assertThrows(
-        IllegalArgumentException.class,
-        () ->
-            journalEntryService.createJournalEntry(
-                "JE-001",
-                LocalDateTime.now(),
-                JournalEntryType.MANUAL,
-                "REF-002",
-                "Another journal entry",
-                "test-user"));
+    // Calling with same entryNumber should return the existing entry, not throw
+    JournalEntry secondEntry =
+        journalEntryService.createJournalEntry(
+            "JE-001",
+            LocalDateTime.now(),
+            JournalEntryType.MANUAL,
+            "REF-002",
+            "Another journal entry",
+            "test-user");
+
+    // Should return the same entry (idempotent)
+    assertEquals(firstEntry.getId(), secondEntry.getId());
+    assertEquals(firstEntry.getEntryNumber(), secondEntry.getEntryNumber());
   }
 
   @Test

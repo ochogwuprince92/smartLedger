@@ -1,4 +1,4 @@
-package com.finance.smartLedger.configuration.scheduling;
+package com.finance.smartLedger.config.scheduling;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;

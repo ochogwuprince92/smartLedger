@@ -253,6 +253,21 @@ public class FeeInvoiceService {
   }
 
   @Transactional
+  public FeePayment recordPayment(
+      UUID invoiceId,
+      FeeType feeType,
+      Money amount,
+      String paymentMethod,
+      String referenceNumber,
+      UUID sourcePaymentId,
+      String processedBy) {
+    FeePayment payment =
+        recordPayment(invoiceId, feeType, amount, paymentMethod, referenceNumber, processedBy);
+    payment.setSourcePaymentId(sourcePaymentId);
+    return feePaymentRepository.save(payment);
+  }
+
+  @Transactional
   public FeePayment completePayment(UUID paymentId, String receiptNumber, String processedBy) {
     FeePayment payment =
         feePaymentRepository

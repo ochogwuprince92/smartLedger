@@ -6,11 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Schema(description = "Request to create a payment")
 public record CreatePaymentRequest(
     @Schema(description = "Payment number", example = "PAY-2024-001", required = true) @NotBlank
         String paymentNumber,
+    @Schema(description = "Invoice ID (optional, for fee payments)") UUID invoiceId,
     @Schema(description = "Payment date", required = true) @NotNull LocalDateTime paymentDate,
     @Schema(description = "Payment method", required = true) @NotNull
         PaymentMethodDto paymentMethod,

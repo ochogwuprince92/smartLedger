@@ -28,10 +28,6 @@ payment:
     paystack:
       secret-key: test_secret_key
       public-key: test_public_key
-    paypal:
-      client-id: test_client_id
-      client-secret: test_client_secret
-      mode: sandbox
 
 logging:
   level:

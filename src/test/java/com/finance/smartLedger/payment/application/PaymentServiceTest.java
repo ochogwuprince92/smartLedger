@@ -33,6 +33,8 @@ class PaymentServiceTest {
 
   @Mock private com.finance.smartLedger.audit.application.AuditService auditService;
 
+  @Mock private com.finance.smartLedger.shared.domain.EventPublisher eventPublisher;
+
   @InjectMocks private PaymentService paymentService;
 
   private static final String PAYMENT_NUMBER = "PAY-2023-001";
@@ -57,7 +59,7 @@ class PaymentServiceTest {
   void testCreatePayment_Success() {
     // Given
     LocalDateTime paymentDate = LocalDateTime.now();
-    PaymentMethod paymentMethod = PaymentMethod.CREDIT_CARD;
+    PaymentMethod paymentMethod = PaymentMethod.PAYSTACK;
     BigDecimal amount = new BigDecimal("100.00");
     String currencyCode = "USD";
     String description = "School fees payment";
@@ -65,6 +67,7 @@ class PaymentServiceTest {
     Payment expectedPayment =
         new Payment(
             PAYMENT_NUMBER,
+            null,
             null,
             paymentDate,
             paymentMethod,
@@ -83,6 +86,7 @@ class PaymentServiceTest {
     Payment result =
         paymentService.createPayment(
             PAYMENT_NUMBER,
+            null,
             null,
             paymentDate,
             paymentMethod,
@@ -128,8 +132,9 @@ class PaymentServiceTest {
                 paymentService.createPayment(
                     PAYMENT_NUMBER,
                     null,
+                    null,
                     LocalDateTime.now(),
-                    PaymentMethod.CREDIT_CARD,
+                    PaymentMethod.PAYSTACK,
                     new BigDecimal("100.00"),
                     "USD",
                     PAYER_NAME,
@@ -153,8 +158,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -210,8 +216,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -241,8 +248,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -304,8 +312,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -361,8 +370,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -404,8 +414,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -433,8 +444,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -472,8 +484,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -513,8 +526,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -541,8 +555,9 @@ class PaymentServiceTest {
         new Payment(
             PAYMENT_NUMBER,
             null,
+            null,
             LocalDateTime.now(),
-            PaymentMethod.CREDIT_CARD,
+            PaymentMethod.PAYSTACK,
             new BigDecimal("100.00"),
             "USD",
             PAYER_NAME,
@@ -566,5 +581,70 @@ class PaymentServiceTest {
     // Verify notification service was NOT called
     verify(notificationService, never())
         .sendPaymentCompletedNotification(any(), any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void testCreatePayment_WithBankTransfer_Success() {
+    // Given
+    LocalDateTime paymentDate = LocalDateTime.now();
+    PaymentMethod paymentMethod = PaymentMethod.BANK_TRANSFER;
+    BigDecimal amount = new BigDecimal("500.00");
+    String currencyCode = "USD";
+    String description = "Bank transfer payment";
+
+    Payment expectedPayment =
+        new Payment(
+            PAYMENT_NUMBER,
+            null,
+            null,
+            paymentDate,
+            paymentMethod,
+            amount,
+            currencyCode,
+            PAYER_NAME,
+            PAYER_EMAIL,
+            description,
+            CREATED_BY);
+    expectedPayment.setPayerPhone(PAYER_PHONE);
+
+    when(paymentRepository.existsByPaymentNumber(PAYMENT_NUMBER)).thenReturn(false);
+    when(paymentRepository.save(any(Payment.class))).thenReturn(expectedPayment);
+
+    // When
+    Payment result =
+        paymentService.createPayment(
+            PAYMENT_NUMBER,
+            null,
+            null,
+            paymentDate,
+            paymentMethod,
+            amount,
+            currencyCode,
+            PAYER_NAME,
+            PAYER_EMAIL,
+            PAYER_PHONE,
+            description,
+            CREATED_BY);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(PAYMENT_NUMBER, result.getPaymentNumber());
+    assertEquals(PaymentStatus.PENDING, result.getStatus());
+    assertEquals(PaymentMethod.BANK_TRANSFER, result.getPaymentMethod());
+    assertEquals(amount, result.getAmount());
+    assertEquals(currencyCode, result.getCurrencyCode());
+    assertEquals(PAYER_NAME, result.getPayerName());
+    assertEquals(PAYER_EMAIL, result.getPayerEmail());
+    assertEquals(PAYER_PHONE, result.getPayerPhone());
+
+    verify(paymentRepository).existsByPaymentNumber(PAYMENT_NUMBER);
+    verify(paymentRepository).save(any(Payment.class));
+    verify(auditService)
+        .logCreate(
+            eq("Payment"),
+            isNull(),
+            eq("Payment created: " + PAYMENT_NUMBER),
+            any(String.class),
+            eq(CREATED_BY));
   }
 }

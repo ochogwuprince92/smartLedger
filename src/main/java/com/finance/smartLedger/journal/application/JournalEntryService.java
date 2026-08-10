@@ -34,9 +34,13 @@ public class JournalEntryService {
       String description,
       String createdBy) {
 
+    // Idempotent journal entry creation - check if entryNumber already exists
     if (journalEntryRepository.existsByEntryNumber(entryNumber)) {
-      throw new IllegalArgumentException(
-          "Journal entry with number " + entryNumber + " already exists");
+      Optional<JournalEntry> existingEntry = journalEntryRepository.findByEntryNumber(entryNumber);
+      if (existingEntry.isPresent()) {
+        // Return existing entry instead of throwing (idempotent behavior)
+        return existingEntry.get();
+      }
     }
 
     JournalEntry journalEntry =

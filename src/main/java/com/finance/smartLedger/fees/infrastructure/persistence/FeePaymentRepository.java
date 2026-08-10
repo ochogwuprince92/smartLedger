@@ -20,6 +20,9 @@ public interface FeePaymentRepository
   @Query("SELECT f FROM FeePayment f WHERE f.receiptNumber = :receiptNumber")
   Optional<FeePayment> findByReceiptNumber(@Param("receiptNumber") String receiptNumber);
 
+  @Query("SELECT f FROM FeePayment f WHERE f.sourcePaymentId = :sourcePaymentId")
+  Optional<FeePayment> findBySourcePaymentId(@Param("sourcePaymentId") UUID sourcePaymentId);
+
   @Query("SELECT f FROM FeePayment f WHERE f.referenceNumber = :referenceNumber")
   Optional<FeePayment> findByReferenceNumber(@Param("referenceNumber") String referenceNumber);
 

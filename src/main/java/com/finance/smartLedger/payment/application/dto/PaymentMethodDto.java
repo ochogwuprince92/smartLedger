@@ -5,13 +5,11 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "Payment method")
 public enum PaymentMethodDto {
-  CREDIT_CARD,
-  DEBIT_CARD,
+  PAYSTACK,
   BANK_TRANSFER,
-  MOBILE_MONEY,
-  CRYPTO,
-  CHECK,
-  CASH;
+  USSD,
+  CARD,
+  QR_CODE;
 
   @JsonCreator
   public static PaymentMethodDto fromString(String value) {

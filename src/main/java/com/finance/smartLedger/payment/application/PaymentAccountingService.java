@@ -107,25 +107,21 @@ public class PaymentAccountingService {
 
   private String getCashAccountCode(PaymentMethod paymentMethod) {
     return switch (paymentMethod) {
-      case CREDIT_CARD -> "CASH_CC";
-      case DEBIT_CARD -> "CASH_DC";
+      case PAYSTACK -> "CASH_PS";
       case BANK_TRANSFER -> "CASH_BT";
-      case MOBILE_MONEY -> "CASH_MM";
-      case CRYPTO -> "CASH_CR";
-      case CHECK -> "CASH_CH";
-      case CASH -> "CASH_CP";
+      case USSD -> "CASH_USSD";
+      case CARD -> "CASH_CARD";
+      case QR_CODE -> "CASH_QR";
     };
   }
 
   private String getCashAccountName(PaymentMethod paymentMethod) {
     return switch (paymentMethod) {
-      case CREDIT_CARD -> "Credit Card Cash Account";
-      case DEBIT_CARD -> "Debit Card Cash Account";
+      case PAYSTACK -> "Paystack Cash Account";
       case BANK_TRANSFER -> "Bank Transfer Cash Account";
-      case MOBILE_MONEY -> "Mobile Money Cash Account";
-      case CRYPTO -> "Cryptocurrency Cash Account";
-      case CHECK -> "Check Cash Account";
-      case CASH -> "Physical Cash Account";
+      case USSD -> "USSD Cash Account";
+      case CARD -> "Card Cash Account";
+      case QR_CODE -> "QR Code Cash Account";
     };
   }
 

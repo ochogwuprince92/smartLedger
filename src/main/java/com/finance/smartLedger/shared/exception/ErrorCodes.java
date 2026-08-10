@@ -18,6 +18,7 @@ public enum ErrorCodes {
   PAYMENT_EXPIRED("ERR-2003", "Payment expired"),
   DUPLICATE_PAYMENT("ERR-2004", "Duplicate payment"),
   PAYMENT_NOT_FOUND("ERR-2005", "Payment not found"),
+  PAYMENT_EXCEEDS_INVOICE_BALANCE("ERR-2006", "Payment amount exceeds invoice outstanding balance"),
 
   // Ledger errors (3000-3999)
   ACCOUNT_NOT_FOUND("ERR-3000", "Account not found"),

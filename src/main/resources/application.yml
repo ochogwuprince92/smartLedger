@@ -94,3 +94,10 @@ n8n:
   webhook-path: ${N8N_WEBHOOK_PATH:/webhook/finance-ai-insight}
   callback-secret: ${N8N_CALLBACK_SECRET:your-secret-key-here}
   timeout: ${N8N_TIMEOUT:30000}
+
+payment:
+  gateway:
+    paystack:
+      secret-key: ${PAYSTACK_SECRET_KEY:}
+      public-key: ${PAYSTACK_PUBLIC_KEY:}
+      base-url: ${PAYSTACK_BASE_URL:https://api.paystack.co}

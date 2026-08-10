@@ -36,6 +36,9 @@ public class FeePayment extends AuditableEntity {
   @JoinColumn(name = "invoice_id", insertable = false, updatable = false)
   private FeeInvoice invoice;
 
+  @Column(name = "source_payment_id")
+  private UUID sourcePaymentId;
+
   @Enumerated(EnumType.STRING)
   @Column(name = "fee_type", nullable = false)
   private FeeType feeType;

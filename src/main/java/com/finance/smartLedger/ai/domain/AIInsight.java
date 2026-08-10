@@ -48,6 +48,9 @@ public class AIInsight extends AuditableEntity {
   @Column(name = "recommendations", columnDefinition = "JSONB")
   private String recommendations;
 
+  @Column(name = "metadata", columnDefinition = "JSONB")
+  private String metadata;
+
   @Column(name = "anomaly_count")
   private Integer anomalyCount;
 

@@ -1,4 +1,4 @@
-package com.finance.smartLedger.configuration;
+package com.finance.smartLedger.config;
 
 import com.finance.smartLedger.shared.util.ClockProvider;
 import org.slf4j.Logger;

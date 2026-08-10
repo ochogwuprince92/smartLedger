@@ -60,15 +60,22 @@ public class ReconciliationRulesEngine {
         reconciliationId,
         unmatchedItems.size());
 
+    // Create a mutable copy of available transactions to remove matched ones
+    List<Transaction> remainingTransactions = new ArrayList<>(availableTransactions);
+
     int matchedCount = 0;
     for (ReconciliationItem item : unmatchedItems) {
-      Optional<Transaction> bestMatch = findBestMatch(item, availableTransactions);
+      Optional<Transaction> bestMatch = findBestMatch(item, remainingTransactions);
 
       if (bestMatch.isPresent()) {
         Transaction transaction = bestMatch.get();
         reconciliationService.matchItem(
             item.getId(), transaction.getId(), transaction.getAmount().getAmount(), "system");
         matchedCount++;
+        
+        // Remove the matched transaction from the pool so it can't be matched again
+        remainingTransactions.remove(transaction);
+        
         log.info(
             "Auto-matched item {} to transaction {} with amount {}",
             item.getId(),
@@ -175,6 +182,15 @@ public class ReconciliationRulesEngine {
 
   /** Calculate amount match score */
   private double calculateAmountMatchScore(BigDecimal expected, BigDecimal actual) {
+    if (expected.compareTo(BigDecimal.ZERO) == 0) {
+      // If expected amount is zero, handle as special case
+      if (actual.compareTo(BigDecimal.ZERO) == 0) {
+        return 1.0; // Both zero - perfect match
+      } else {
+        return 0.0; // Expected zero but actual non-zero - no match
+      }
+    }
+    
     if (expected.compareTo(actual) == 0) {
       return 1.0;
     }
@@ -236,11 +252,17 @@ public class ReconciliationRulesEngine {
           itemVariance.put("expected_amount", item.getExpectedAmount());
           itemVariance.put("actual_amount", item.getActualAmount());
           itemVariance.put("variance", variance);
-          itemVariance.put(
-              "variance_percentage",
-              variance
-                  .divide(item.getExpectedAmount(), 4, RoundingMode.HALF_UP)
-                  .multiply(new BigDecimal("100")));
+          
+          // Handle zero expected amount case
+          if (item.getExpectedAmount().compareTo(BigDecimal.ZERO) == 0) {
+            itemVariance.put("variance_percentage", BigDecimal.ZERO);
+          } else {
+            itemVariance.put(
+                "variance_percentage",
+                variance
+                    .divide(item.getExpectedAmount(), 4, RoundingMode.HALF_UP)
+                    .multiply(new BigDecimal("100")));
+          }
 
           itemVariances.add(itemVariance);
           totalVariance = totalVariance.add(variance.abs());
@@ -290,6 +312,17 @@ public class ReconciliationRulesEngine {
     // Items with significant variance require review
     if (item.getMatchStatus() == MatchStatus.MATCHED) {
       BigDecimal variance = item.getExpectedAmount().subtract(item.getActualAmount()).abs();
+      
+      // Handle zero expected amount case
+      if (item.getExpectedAmount().compareTo(BigDecimal.ZERO) == 0) {
+        // If expected is zero but actual is non-zero, requires manual review
+        if (item.getActualAmount().compareTo(BigDecimal.ZERO) != 0) {
+          return true;
+        }
+        // Both zero - no variance, no review needed
+        return false;
+      }
+      
       BigDecimal variancePercentage =
           variance.divide(item.getExpectedAmount(), 4, RoundingMode.HALF_UP);
       if (variancePercentage.compareTo(new BigDecimal("0.05")) > 0) { // > 5% variance

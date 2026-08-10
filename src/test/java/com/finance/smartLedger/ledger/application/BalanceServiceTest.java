@@ -52,7 +52,7 @@ class BalanceServiceTest {
 
     Money balance = balanceService.getCurrentBalance(testId);
 
-    assertNotNull(balance);
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), balance);
     verify(accountRepository).findById(testId);
   }
 
@@ -73,7 +73,7 @@ class BalanceServiceTest {
 
     var balance = balanceService.getBalanceDetails(testId);
 
-    assertNotNull(balance);
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), balance.getCurrentBalance());
     verify(accountRepository).findById(testId);
   }
 
@@ -84,6 +84,8 @@ class BalanceServiceTest {
     Map<AccountType, Money> balances = balanceService.getBalancesByAccountType();
 
     assertNotNull(balances);
+    assertFalse(balances.isEmpty());
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), balances.get(AccountType.ASSET));
     verify(accountRepository).findAll();
   }
 
@@ -93,7 +95,7 @@ class BalanceServiceTest {
 
     Money total = balanceService.getTotalAssetBalance();
 
-    assertNotNull(total);
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.ASSET);
   }
 
@@ -104,7 +106,7 @@ class BalanceServiceTest {
 
     Money total = balanceService.getTotalLiabilityBalance();
 
-    assertNotNull(total);
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.LIABILITY);
   }
 
@@ -114,7 +116,7 @@ class BalanceServiceTest {
 
     Money total = balanceService.getTotalEquityBalance();
 
-    assertNotNull(total);
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.EQUITY);
   }
 
@@ -124,7 +126,7 @@ class BalanceServiceTest {
 
     Money total = balanceService.getTotalRevenueBalance();
 
-    assertNotNull(total);
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.REVENUE);
   }
 
@@ -134,7 +136,7 @@ class BalanceServiceTest {
 
     Money total = balanceService.getTotalExpenseBalance();
 
-    assertNotNull(total);
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.EXPENSE);
   }
 
@@ -145,7 +147,7 @@ class BalanceServiceTest {
 
     Money netIncome = balanceService.getNetIncome();
 
-    assertNotNull(netIncome);
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), netIncome);
   }
 
   @Test
@@ -252,21 +254,83 @@ class BalanceServiceTest {
 
   @Test
   void calculateTrialBalance_Success() {
-    when(accountRepository.findAll()).thenReturn(List.of(testAccount));
+    // Create accounts with known balances
+    Account assetAccount = Account.builder()
+        .accountName("Asset Account")
+        .accountType(AccountType.ASSET)
+        .isActive(true)
+        .build();
+    assetAccount.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(1000.00), "USD")));
+
+    Account liabilityAccount = Account.builder()
+        .accountName("Liability Account")
+        .accountType(AccountType.LIABILITY)
+        .isActive(true)
+        .build();
+    liabilityAccount.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(1000.00), "USD")));
+
+    when(accountRepository.findAll()).thenReturn(List.of(assetAccount, liabilityAccount));
 
     Money difference = balanceService.calculateTrialBalance();
 
-    assertNotNull(difference);
+    // Trial balance should be zero when debits equal credits
+    assertTrue(difference.isZero());
     verify(accountRepository).findAll();
   }
 
   @Test
   void isTrialBalanceBalanced_Success() {
-    when(accountRepository.findAll()).thenReturn(List.of(testAccount));
+    // Create balanced accounts
+    Account assetAccount = Account.builder()
+        .accountName("Asset Account")
+        .accountType(AccountType.ASSET)
+        .isActive(true)
+        .build();
+    assetAccount.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(1000.00), "USD")));
+
+    Account liabilityAccount = Account.builder()
+        .accountName("Liability Account")
+        .accountType(AccountType.LIABILITY)
+        .isActive(true)
+        .build();
+    liabilityAccount.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(1000.00), "USD")));
+
+    when(accountRepository.findAll()).thenReturn(List.of(assetAccount, liabilityAccount));
 
     boolean balanced = balanceService.isTrialBalanceBalanced();
 
-    assertNotNull(balanced);
+    assertTrue(balanced);
+    verify(accountRepository).findAll();
+  }
+
+  @Test
+  void isTrialBalanceBalanced_Unbalanced_ReturnsFalse() {
+    // Create unbalanced accounts
+    Account assetAccount = Account.builder()
+        .accountName("Asset Account")
+        .accountType(AccountType.ASSET)
+        .isActive(true)
+        .build();
+    assetAccount.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(1000.00), "USD")));
+
+    Account liabilityAccount = Account.builder()
+        .accountName("Liability Account")
+        .accountType(AccountType.LIABILITY)
+        .isActive(true)
+        .build();
+    liabilityAccount.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(500.00), "USD")));
+
+    when(accountRepository.findAll()).thenReturn(List.of(assetAccount, liabilityAccount));
+
+    boolean balanced = balanceService.isTrialBalanceBalanced();
+
+    assertFalse(balanced);
     verify(accountRepository).findAll();
   }
 
@@ -277,6 +341,7 @@ class BalanceServiceTest {
     List<Account> accounts = balanceService.getAccountsWithNegativeBalance();
 
     assertNotNull(accounts);
+    assertTrue(accounts.isEmpty()); // Test account has positive balance
     verify(accountRepository).findAll();
   }
 
@@ -287,6 +352,7 @@ class BalanceServiceTest {
     List<Account> accounts = balanceService.getAccountsWithZeroBalance();
 
     assertNotNull(accounts);
+    assertTrue(accounts.isEmpty()); // Test account has non-zero balance
     verify(accountRepository).findAll();
   }
 

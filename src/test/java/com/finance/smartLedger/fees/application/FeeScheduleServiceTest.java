@@ -408,4 +408,34 @@ class FeeScheduleServiceTest {
     assertNotNull(result);
     verify(feeScheduleRepository).findActiveByAcademicYear(academicYear);
   }
+
+  @Test
+  void addFeeItem_WithRegistrationFee_Success() {
+    // Given
+    FeeSchedule schedule = new FeeSchedule(code, "Grade 10 Fees", academicYear, "Grade 10");
+    when(feeScheduleRepository.findById(scheduleId)).thenReturn(Optional.of(schedule));
+    when(feeScheduleRepository.save(any(FeeSchedule.class))).thenReturn(schedule);
+
+    // When
+    FeeSchedule result =
+        feeScheduleService.addFeeItem(
+            scheduleId,
+            FeeType.REGISTRATION_FEE,
+            Money.of(new BigDecimal("1000.00"), "USD"),
+            true,
+            "Registration Fee",
+            "admin");
+
+    // Then
+    assertNotNull(result);
+    assertEquals(1, result.getFeeItems().size());
+    FeeScheduleItem item = result.getFeeItems().iterator().next();
+    assertEquals(FeeType.REGISTRATION_FEE, item.getFeeType());
+    assertEquals(Money.of(new BigDecimal("1000.00"), "USD"), item.getAmount());
+    assertTrue(item.isMandatory());
+    assertEquals("Registration Fee", item.getDescription());
+
+    verify(feeScheduleRepository).findById(scheduleId);
+    verify(feeScheduleRepository).save(any(FeeSchedule.class));
+  }
 }

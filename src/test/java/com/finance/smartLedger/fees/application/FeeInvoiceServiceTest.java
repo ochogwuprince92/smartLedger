@@ -7,6 +7,7 @@ import static org.mockito.Mockito.*;
 import com.finance.smartLedger.audit.application.AuditService;
 import com.finance.smartLedger.fees.domain.FeeInvoice;
 import com.finance.smartLedger.fees.domain.FeeInvoice.InvoiceStatus;
+import com.finance.smartLedger.fees.domain.FeeInvoiceLineItem;
 import com.finance.smartLedger.fees.domain.FeePayment;
 import com.finance.smartLedger.fees.domain.FeeSchedule;
 import com.finance.smartLedger.fees.domain.FeeType;
@@ -391,5 +392,33 @@ class FeeInvoiceServiceTest {
 
     // When/Then
     assertThrows(IllegalArgumentException.class, () -> feeInvoiceService.getInvoice(invoiceId));
+  }
+
+  @Test
+  void addLineItem_WithRegistrationFee_Success() {
+    // Given
+    FeeInvoice invoice = new FeeInvoice(studentId, "INV-24-00001", dueDate);
+    when(feeInvoiceRepository.findById(invoiceId)).thenReturn(Optional.of(invoice));
+    when(feeInvoiceRepository.save(any(FeeInvoice.class))).thenReturn(invoice);
+
+    // When
+    FeeInvoice result =
+        feeInvoiceService.addLineItem(
+            invoiceId,
+            FeeType.REGISTRATION_FEE,
+            Money.of(new BigDecimal("1000.00"), "USD"),
+            "Registration Fee",
+            "admin");
+
+    // Then
+    assertNotNull(result);
+    assertEquals(1, result.getLineItems().size());
+    FeeInvoiceLineItem item = result.getLineItems().iterator().next();
+    assertEquals(FeeType.REGISTRATION_FEE, item.getFeeType());
+    assertEquals(Money.of(new BigDecimal("1000.00"), "USD"), item.getAmount());
+    assertEquals("Registration Fee", item.getDescription());
+
+    verify(feeInvoiceRepository).findById(invoiceId);
+    verify(feeInvoiceRepository).save(any(FeeInvoice.class));
   }
 }

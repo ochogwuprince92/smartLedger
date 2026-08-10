@@ -83,7 +83,7 @@ public class Account extends AuditableEntity {
       throw new IllegalStateException("Cannot debit from inactive account");
     }
     Money previousBalance = balance.getCurrentBalance();
-    balance.debit(amount);
+    balance.debit(amount, accountType.isDebitAccount());
     this.setUpdatedBy(updatedBy);
     // Domain event would be published here
   }
@@ -93,7 +93,7 @@ public class Account extends AuditableEntity {
       throw new IllegalStateException("Cannot credit inactive account");
     }
     Money previousBalance = balance.getCurrentBalance();
-    balance.credit(amount);
+    balance.credit(amount, accountType.isDebitAccount());
     this.setUpdatedBy(updatedBy);
     // Domain event would be published here
   }

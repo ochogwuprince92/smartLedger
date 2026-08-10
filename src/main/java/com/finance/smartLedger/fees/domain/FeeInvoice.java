@@ -1,6 +1,8 @@
 package com.finance.smartLedger.fees.domain;
 
 import com.finance.smartLedger.shared.entity.AuditableEntity;
+import com.finance.smartLedger.shared.exception.BusinessException;
+import com.finance.smartLedger.shared.exception.ErrorCodes;
 import com.finance.smartLedger.shared.valueobject.Money;
 import jakarta.persistence.*;
 import java.time.LocalDate;
@@ -140,6 +142,12 @@ public class FeeInvoice extends AuditableEntity {
         newPaidAmount = newPaidAmount.add(payment.getAmount());
       }
     }
+
+    // Guard against overpayment before mutating state
+    if (newPaidAmount.getAmount().compareTo(newTotal.getAmount()) > 0) {
+      throw new BusinessException(ErrorCodes.PAYMENT_EXCEEDS_INVOICE_BALANCE);
+    }
+
     this.paidAmount = newPaidAmount;
 
     this.balanceAmount = totalAmount.subtract(paidAmount);

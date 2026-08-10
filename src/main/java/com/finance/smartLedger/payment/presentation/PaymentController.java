@@ -40,6 +40,7 @@ public class PaymentController {
         paymentService.createPayment(
             request.paymentNumber(),
             UUID.randomUUID().toString(),
+            request.invoiceId(),
             request.paymentDate(),
             request.paymentMethod().toDomain(),
             request.amount(),
@@ -121,14 +122,12 @@ public class PaymentController {
         ApiResponse.success("Payment cancelled successfully", PaymentResponse.from(payment)));
   }
 
-  @PostMapping("/webhook/{gatewayType}")
-  @Operation(summary = "Handle webhook", description = "Handles payment gateway webhooks")
+  @PostMapping("/webhook/paystack")
+  @Operation(summary = "Handle Paystack webhook", description = "Handles Paystack payment gateway webhooks")
   public ResponseEntity<ApiResponse<PaymentResponse>> handleWebhook(
-      @Parameter(description = "Gateway type (stripe, paypal, etc.)") @PathVariable
-          String gatewayType,
       @RequestHeader(value = "X-Webhook-Signature", required = false) String signature,
       @RequestBody String payload) {
-    Payment payment = webhookHandler.handleWebhook(gatewayType, payload, signature);
+    Payment payment = webhookHandler.handleWebhook("paystack", payload, signature);
     if (payment != null) {
       return ResponseEntity.ok(
           ApiResponse.success("Webhook processed successfully", PaymentResponse.from(payment)));

@@ -16,6 +16,7 @@ import org.springframework.web.client.RestTemplate;
 @Slf4j
 public class N8nClientImpl implements N8nClient {
 
+  @Qualifier("n8nRestTemplate")
   private final RestTemplate restTemplate;
 
   @Value("${n8n.base-url}")
@@ -23,9 +24,6 @@ public class N8nClientImpl implements N8nClient {
 
   @Value("${n8n.webhook-path}")
   private String webhookPath;
-
-  @Value("${n8n.timeout:30000}")
-  private int timeout;
 
   @Override
   public void requestInsight(AIInsightRequest request) {

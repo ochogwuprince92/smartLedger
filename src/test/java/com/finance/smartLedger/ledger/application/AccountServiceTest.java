@@ -29,34 +29,73 @@ class AccountServiceTest {
 
   @InjectMocks private AccountService accountService;
 
-  private Account testAccount;
-  private UUID testId;
+  private Account assetAccount;
+  private Account liabilityAccount;
+  private Account revenueAccount;
+  private UUID assetId;
+  private UUID liabilityId;
+  private UUID revenueId;
 
   @BeforeEach
   void setUp() {
-    testId = UUID.randomUUID();
-    testAccount =
+    assetId = UUID.randomUUID();
+    liabilityId = UUID.randomUUID();
+    revenueId = UUID.randomUUID();
+    
+    assetAccount =
         Account.builder()
-            .accountName("Test Account")
+            .accountName("Asset Account")
             .accountType(AccountType.ASSET)
             .isActive(true)
             .build();
-    testAccount.setId(testId);
-    testAccount.setAccountNumber(
+    assetAccount.setId(assetId);
+    assetAccount.setAccountNumber(
         com.finance.smartLedger.ledger.domain.valueobject.AccountNumber.of("10000001"));
-    testAccount.setAccountCode(
+    assetAccount.setAccountCode(
         com.finance.smartLedger.ledger.domain.valueobject.AccountCode.of("GL001"));
-    testAccount.setBalance(
+    assetAccount.setBalance(
         new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
             com.finance.smartLedger.shared.valueobject.Money.of(
                 java.math.BigDecimal.valueOf(1000.00), "USD")));
+    
+    liabilityAccount =
+        Account.builder()
+            .accountName("Liability Account")
+            .accountType(AccountType.LIABILITY)
+            .isActive(true)
+            .build();
+    liabilityAccount.setId(liabilityId);
+    liabilityAccount.setAccountNumber(
+        com.finance.smartLedger.ledger.domain.valueobject.AccountNumber.of("20000001"));
+    liabilityAccount.setAccountCode(
+        com.finance.smartLedger.ledger.domain.valueobject.AccountCode.of("GL002"));
+    liabilityAccount.setBalance(
+        new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+            com.finance.smartLedger.shared.valueobject.Money.of(
+                java.math.BigDecimal.valueOf(500.00), "USD")));
+    
+    revenueAccount =
+        Account.builder()
+            .accountName("Revenue Account")
+            .accountType(AccountType.REVENUE)
+            .isActive(true)
+            .build();
+    revenueAccount.setId(revenueId);
+    revenueAccount.setAccountNumber(
+        com.finance.smartLedger.ledger.domain.valueobject.AccountNumber.of("40000001"));
+    revenueAccount.setAccountCode(
+        com.finance.smartLedger.ledger.domain.valueobject.AccountCode.of("GL003"));
+    revenueAccount.setBalance(
+        new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+            com.finance.smartLedger.shared.valueobject.Money.of(
+                java.math.BigDecimal.valueOf(2000.00), "USD")));
   }
 
   @Test
   void createAccount_Success() {
     when(accountRepository.existsByAccountNumber_Value("10000001")).thenReturn(false);
     when(accountRepository.existsByAccountCode_Value("GL001")).thenReturn(false);
-    when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+    when(accountRepository.save(any(Account.class))).thenReturn(assetAccount);
 
     Account result =
         accountService.createAccount(
@@ -82,8 +121,8 @@ class AccountServiceTest {
               "10000001",
               "GL001",
               "Test Account",
-              AccountType.ASSET,
-              Money.of(BigDecimal.valueOf(1000.00), "USD"),
+              AccountType.LIABILITY,
+              Money.of(BigDecimal.valueOf(500.00), "USD"),
               "test-user");
         });
 
@@ -102,8 +141,8 @@ class AccountServiceTest {
               "10000002",
               "GL001",
               "Test Account",
-              AccountType.ASSET,
-              Money.of(BigDecimal.valueOf(1000.00), "USD"),
+              AccountType.REVENUE,
+              Money.of(BigDecimal.valueOf(2000.00), "USD"),
               "test-user");
         });
 
@@ -112,19 +151,19 @@ class AccountServiceTest {
 
   @Test
   void findById_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
+    when(accountRepository.findById(assetId)).thenReturn(Optional.of(assetAccount));
 
-    Optional<Account> result = accountService.findById(testId);
+    Optional<Account> result = accountService.findById(assetId);
 
     assertTrue(result.isPresent());
-    assertEquals(testId, result.get().getId());
+    assertEquals(assetId, result.get().getId());
   }
 
   @Test
   void findById_NotFound_ReturnsEmpty() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.empty());
+    when(accountRepository.findById(assetId)).thenReturn(Optional.empty());
 
-    Optional<Account> result = accountService.findById(testId);
+    Optional<Account> result = accountService.findById(assetId);
 
     assertFalse(result.isPresent());
   }
@@ -132,7 +171,7 @@ class AccountServiceTest {
   @Test
   void findByAccountNumber_Success() {
     when(accountRepository.findByAccountNumber_Value("10000001"))
-        .thenReturn(Optional.of(testAccount));
+        .thenReturn(Optional.of(assetAccount));
 
     Optional<Account> result = accountService.findByAccountNumber("10000001");
 
@@ -141,7 +180,7 @@ class AccountServiceTest {
 
   @Test
   void findByAccountCode_Success() {
-    when(accountRepository.findByAccountCode_Value("GL001")).thenReturn(Optional.of(testAccount));
+    when(accountRepository.findByAccountCode_Value("GL001")).thenReturn(Optional.of(assetAccount));
 
     Optional<Account> result = accountService.findByAccountCode("GL001");
 
@@ -150,27 +189,35 @@ class AccountServiceTest {
 
   @Test
   void findByAccountType_Success() {
-    when(accountRepository.findByAccountType(AccountType.ASSET)).thenReturn(List.of(testAccount));
+    when(accountRepository.findByAccountType(AccountType.ASSET)).thenReturn(List.of(assetAccount));
+    when(accountRepository.findByAccountType(AccountType.LIABILITY)).thenReturn(List.of(liabilityAccount));
+    when(accountRepository.findByAccountType(AccountType.REVENUE)).thenReturn(List.of(revenueAccount));
 
-    List<Account> result = accountService.findByAccountType(AccountType.ASSET);
+    List<Account> assetResult = accountService.findByAccountType(AccountType.ASSET);
+    List<Account> liabilityResult = accountService.findByAccountType(AccountType.LIABILITY);
+    List<Account> revenueResult = accountService.findByAccountType(AccountType.REVENUE);
 
-    assertEquals(1, result.size());
-    assertEquals(AccountType.ASSET, result.get(0).getAccountType());
+    assertEquals(1, assetResult.size());
+    assertEquals(AccountType.ASSET, assetResult.get(0).getAccountType());
+    assertEquals(1, liabilityResult.size());
+    assertEquals(AccountType.LIABILITY, liabilityResult.get(0).getAccountType());
+    assertEquals(1, revenueResult.size());
+    assertEquals(AccountType.REVENUE, revenueResult.get(0).getAccountType());
   }
 
   @Test
   void findActiveAccounts_Success() {
-    when(accountRepository.findByIsActiveTrue()).thenReturn(List.of(testAccount));
+    when(accountRepository.findByIsActiveTrue()).thenReturn(List.of(assetAccount, liabilityAccount, revenueAccount));
 
     List<Account> result = accountService.findActiveAccounts();
 
-    assertEquals(1, result.size());
+    assertEquals(3, result.size());
   }
 
   @Test
   void findByParentAccountId_Success() {
     UUID parentId = UUID.randomUUID();
-    when(accountRepository.findByParentAccountId(parentId)).thenReturn(List.of(testAccount));
+    when(accountRepository.findByParentAccountId(parentId)).thenReturn(List.of(assetAccount));
 
     List<Account> result = accountService.findByParentAccountId(parentId);
 
@@ -179,20 +226,20 @@ class AccountServiceTest {
 
   @Test
   void findAllAccounts_Success() {
-    when(accountRepository.findAll()).thenReturn(List.of(testAccount));
+    when(accountRepository.findAll()).thenReturn(List.of(assetAccount, liabilityAccount, revenueAccount));
 
     List<Account> result = accountService.findAllAccounts();
 
-    assertEquals(1, result.size());
+    assertEquals(3, result.size());
   }
 
   @Test
   void updateAccount_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
-    when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+    when(accountRepository.findById(assetId)).thenReturn(Optional.of(assetAccount));
+    when(accountRepository.save(any(Account.class))).thenReturn(assetAccount);
 
     Account result =
-        accountService.updateAccount(testId, "Updated Name", "Updated Description", "test-user");
+        accountService.updateAccount(assetId, "Updated Name", "Updated Description", "test-user");
 
     assertNotNull(result);
     verify(accountRepository).save(any(Account.class));
@@ -200,12 +247,12 @@ class AccountServiceTest {
 
   @Test
   void updateAccount_NotFound_ThrowsException() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.empty());
+    when(accountRepository.findById(assetId)).thenReturn(Optional.empty());
 
     assertThrows(
         IllegalArgumentException.class,
         () -> {
-          accountService.updateAccount(testId, "Updated Name", "Updated Description", "test-user");
+          accountService.updateAccount(assetId, "Updated Name", "Updated Description", "test-user");
         });
 
     verify(accountRepository, never()).save(any(Account.class));
@@ -213,63 +260,63 @@ class AccountServiceTest {
 
   @Test
   void activateAccount_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
-    when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+    when(accountRepository.findById(liabilityId)).thenReturn(Optional.of(liabilityAccount));
+    when(accountRepository.save(any(Account.class))).thenReturn(liabilityAccount);
 
-    accountService.activateAccount(testId, "test-user");
+    accountService.activateAccount(liabilityId, "test-user");
 
     verify(accountRepository).save(any(Account.class));
   }
 
   @Test
   void deactivateAccount_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
-    when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+    when(accountRepository.findById(revenueId)).thenReturn(Optional.of(revenueAccount));
+    when(accountRepository.save(any(Account.class))).thenReturn(revenueAccount);
 
-    accountService.deactivateAccount(testId, "test-user");
+    accountService.deactivateAccount(revenueId, "test-user");
 
     verify(accountRepository).save(any(Account.class));
   }
 
   @Test
   void debitAccount_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
-    when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+    when(accountRepository.findById(assetId)).thenReturn(Optional.of(assetAccount));
+    when(accountRepository.save(any(Account.class))).thenReturn(assetAccount);
 
-    accountService.debitAccount(testId, Money.of(BigDecimal.valueOf(100.00), "USD"), "test-user");
+    accountService.debitAccount(assetId, Money.of(BigDecimal.valueOf(100.00), "USD"), "test-user");
 
     verify(accountRepository).save(any(Account.class));
   }
 
   @Test
   void creditAccount_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
-    when(accountRepository.save(any(Account.class))).thenReturn(testAccount);
+    when(accountRepository.findById(revenueId)).thenReturn(Optional.of(revenueAccount));
+    when(accountRepository.save(any(Account.class))).thenReturn(revenueAccount);
 
-    accountService.creditAccount(testId, Money.of(BigDecimal.valueOf(100.00), "USD"), "test-user");
+    accountService.creditAccount(revenueId, Money.of(BigDecimal.valueOf(100.00), "USD"), "test-user");
 
     verify(accountRepository).save(any(Account.class));
   }
 
   @Test
   void deleteAccount_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
-    when(accountRepository.findByParentAccountId(testId)).thenReturn(List.of());
+    when(accountRepository.findById(assetId)).thenReturn(Optional.of(assetAccount));
+    when(accountRepository.findByParentAccountId(assetId)).thenReturn(List.of());
     doNothing().when(accountRepository).delete(any(Account.class));
 
-    accountService.deleteAccount(testId);
+    accountService.deleteAccount(assetId);
 
     verify(accountRepository).delete(any(Account.class));
   }
 
   @Test
   void deleteAccount_NotFound_ThrowsException() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.empty());
+    when(accountRepository.findById(assetId)).thenReturn(Optional.empty());
 
     assertThrows(
         IllegalArgumentException.class,
         () -> {
-          accountService.deleteAccount(testId);
+          accountService.deleteAccount(assetId);
         });
 
     verify(accountRepository, never()).delete(any(Account.class));
@@ -277,13 +324,13 @@ class AccountServiceTest {
 
   @Test
   void deleteAccount_WithChildren_ThrowsException() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
-    when(accountRepository.findByParentAccountId(testId)).thenReturn(List.of(testAccount));
+    when(accountRepository.findById(assetId)).thenReturn(Optional.of(assetAccount));
+    when(accountRepository.findByParentAccountId(assetId)).thenReturn(List.of(liabilityAccount));
 
     assertThrows(
         IllegalStateException.class,
         () -> {
-          accountService.deleteAccount(testId);
+          accountService.deleteAccount(assetId);
         });
 
     verify(accountRepository, never()).delete(any(Account.class));
@@ -291,19 +338,20 @@ class AccountServiceTest {
 
   @Test
   void getAccountBalance_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
+    when(accountRepository.findById(liabilityId)).thenReturn(Optional.of(liabilityAccount));
 
-    Money balance = accountService.getAccountBalance(testId);
+    Money balance = accountService.getAccountBalance(liabilityId);
 
-    assertNotNull(balance);
+    assertEquals(Money.of(BigDecimal.valueOf(500.00), "USD"), balance);
   }
 
   @Test
   void getAccountBalanceDetails_Success() {
-    when(accountRepository.findById(testId)).thenReturn(Optional.of(testAccount));
+    when(accountRepository.findById(revenueId)).thenReturn(Optional.of(revenueAccount));
 
-    var balance = accountService.getAccountBalanceDetails(testId);
+    var balance = accountService.getAccountBalanceDetails(revenueId);
 
     assertNotNull(balance);
+    assertEquals(Money.of(BigDecimal.valueOf(2000.00), "USD"), balance.getCurrentBalance());
   }
 }

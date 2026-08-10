@@ -1,5 +1,6 @@
 package com.finance.smartLedger.ai.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finance.smartLedger.ai.domain.AIInsight;
 import com.finance.smartLedger.ai.domain.AIInsightType;
 import com.finance.smartLedger.ai.domain.InsightStatus;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AnomalyDetectionService {
 
   private final AIInsightRepository aiInsightRepository;
+  private final ObjectMapper objectMapper;
 
   @Value("${ai.anomaly-detection.duplicate-threshold-seconds:300}")
   private long duplicateThresholdSeconds;
@@ -99,6 +101,13 @@ public class AnomalyDetectionService {
     double mean = calculateMean(transactions);
     double stdDev = calculateStandardDeviation(transactions, mean);
 
+    // Guard against zero standard deviation (all transactions have identical amounts)
+    // This prevents NaN from division by zero in z-score calculation
+    if (stdDev == 0.0) {
+      log.info("All transactions have identical amounts (stdDev=0), skipping outlier detection");
+      return anomalies;
+    }
+
     for (Transaction transaction : transactions) {
       double amount = transaction.getAmount().getAmount().doubleValue();
       double zScore = Math.abs((amount - mean) / stdDev);
@@ -133,7 +142,9 @@ public class AnomalyDetectionService {
     List<AIInsight> anomalies = new ArrayList<>();
 
     for (Payment payment : payments) {
-      double riskScore = calculateRiskScore(payment, payments);
+      // Exclude the payment itself from the baseline to avoid self-contamination
+      List<Payment> baseline = payments.stream().filter(p -> !p.equals(payment)).toList();
+      double riskScore = calculateRiskScore(payment, baseline);
 
       if (riskScore > riskThreshold) {
         AIInsight insight = createHighRiskPaymentInsight(payment, riskScore, "system");
@@ -210,6 +221,14 @@ public class AnomalyDetectionService {
             .requestedAt(LocalDateTime.now())
             .build();
     insight.setCreatedBy(createdBy);
+    
+    // Set metadata as JSON string
+    try {
+      insight.setMetadata(objectMapper.writeValueAsString(metadata));
+    } catch (Exception e) {
+      log.error("Failed to serialize metadata for duplicate payment insight", e);
+    }
+    
     return insight;
   }
 
@@ -235,6 +254,14 @@ public class AnomalyDetectionService {
             .requestedAt(LocalDateTime.now())
             .build();
     insight.setCreatedBy(createdBy);
+    
+    // Set metadata as JSON string
+    try {
+      insight.setMetadata(objectMapper.writeValueAsString(metadata));
+    } catch (Exception e) {
+      log.error("Failed to serialize metadata for negative balance insight", e);
+    }
+    
     return insight;
   }
 
@@ -261,6 +288,14 @@ public class AnomalyDetectionService {
             .requestedAt(LocalDateTime.now())
             .build();
     insight.setCreatedBy(createdBy);
+    
+    // Set metadata as JSON string
+    try {
+      insight.setMetadata(objectMapper.writeValueAsString(metadata));
+    } catch (Exception e) {
+      log.error("Failed to serialize metadata for outlier insight", e);
+    }
+    
     return insight;
   }
 
@@ -286,6 +321,14 @@ public class AnomalyDetectionService {
             .requestedAt(LocalDateTime.now())
             .build();
     insight.setCreatedBy(createdBy);
+    
+    // Set metadata as JSON string
+    try {
+      insight.setMetadata(objectMapper.writeValueAsString(metadata));
+    } catch (Exception e) {
+      log.error("Failed to serialize metadata for high risk payment insight", e);
+    }
+    
     return insight;
   }
 
@@ -354,8 +397,9 @@ public class AnomalyDetectionService {
 
     // Higher risk for certain payment methods
     if (paymentMethod == PaymentMethod.BANK_TRANSFER) return 0.6;
-    if (paymentMethod == PaymentMethod.CREDIT_CARD) return 0.3;
-    if (paymentMethod == PaymentMethod.DEBIT_CARD) return 0.2;
+    if (paymentMethod == PaymentMethod.CARD) return 0.3;
+    if (paymentMethod == PaymentMethod.USSD) return 0.4;
+    if (paymentMethod == PaymentMethod.QR_CODE) return 0.2;
 
     return 0.2;
   }

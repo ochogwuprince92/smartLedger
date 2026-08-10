@@ -743,9 +743,8 @@ INSERT INTO users (
 VALUES (
   gen_random_uuid(), 
   'admin', 
-  'admin@smartledger.com', 
-  'Ogwaaismywife@gmail.com',
-  'System', 
+  'admin.smartledger@gmail.com',
+  '$2b$10$QXXLP77UqerY.DYP5g1Hb.QABl5VVgfl7FT66SCSdzw6Wqma5HUdq',
   'Administrator', 
   true, 
   true, 

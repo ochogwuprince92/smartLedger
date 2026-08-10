@@ -130,4 +130,76 @@ class AccountTest {
     assertEquals(account.getId(), event.getAccountId());
     assertEquals("1234567890", event.getAccountNumber());
   }
+
+  @Test
+  void shouldCreditLiabilityAccount_ShouldIncreaseBalance() {
+    Account liabilityAccount =
+        new Account(
+            AccountNumber.of("0987654321"),
+            AccountCode.of("LI001"),
+            "Test Liability",
+            AccountType.LIABILITY,
+            Money.of(100.00, "USD"),
+            "SYSTEM");
+
+    Money creditAmount = Money.of(50.00, "USD");
+    liabilityAccount.credit(creditAmount, "USER1");
+
+    // For credit-normal accounts (LIABILITY), crediting should INCREASE balance
+    assertEquals(Money.of(150.00, "USD"), liabilityAccount.getBalance().getCurrentBalance());
+  }
+
+  @Test
+  void shouldDebitLiabilityAccount_ShouldDecreaseBalance() {
+    Account liabilityAccount =
+        new Account(
+            AccountNumber.of("0987654321"),
+            AccountCode.of("LI001"),
+            "Test Liability",
+            AccountType.LIABILITY,
+            Money.of(100.00, "USD"),
+            "SYSTEM");
+
+    Money debitAmount = Money.of(50.00, "USD");
+    liabilityAccount.debit(debitAmount, "USER1");
+
+    // For credit-normal accounts (LIABILITY), debiting should DECREASE balance
+    assertEquals(Money.of(50.00, "USD"), liabilityAccount.getBalance().getCurrentBalance());
+  }
+
+  @Test
+  void shouldCreditRevenueAccount_ShouldIncreaseBalance() {
+    Account revenueAccount =
+        new Account(
+            AccountNumber.of("0987654322"),
+            AccountCode.of("REV001"),
+            "Test Revenue",
+            AccountType.REVENUE,
+            Money.of(100.00, "USD"),
+            "SYSTEM");
+
+    Money creditAmount = Money.of(50.00, "USD");
+    revenueAccount.credit(creditAmount, "USER1");
+
+    // For credit-normal accounts (REVENUE), crediting should INCREASE balance
+    assertEquals(Money.of(150.00, "USD"), revenueAccount.getBalance().getCurrentBalance());
+  }
+
+  @Test
+  void shouldDebitRevenueAccount_ShouldDecreaseBalance() {
+    Account revenueAccount =
+        new Account(
+            AccountNumber.of("0987654322"),
+            AccountCode.of("REV001"),
+            "Test Revenue",
+            AccountType.REVENUE,
+            Money.of(100.00, "USD"),
+            "SYSTEM");
+
+    Money debitAmount = Money.of(50.00, "USD");
+    revenueAccount.debit(debitAmount, "USER1");
+
+    // For credit-normal accounts (REVENUE), debiting should DECREASE balance
+    assertEquals(Money.of(50.00, "USD"), revenueAccount.getBalance().getCurrentBalance());
+  }
 }

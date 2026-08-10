@@ -53,13 +53,7 @@ public class PaymentWebhookHandler {
       return false;
     }
 
-    return switch (gatewayType.toLowerCase()) {
-      case "paystack" -> signatureValidator.validatePaystackSignature(payload, signature);
-      default -> {
-        log.warn("Signature validation not implemented for gateway: {}", gatewayType);
-        yield true; // Allow for gateways without signature validation
-      }
-    };
+    return signatureValidator.validatePaystackSignature(payload, signature);
   }
 
   private Payment updatePaymentFromWebhook(
@@ -92,42 +86,22 @@ public class PaymentWebhookHandler {
   }
 
   private String extractEventType(JsonNode jsonNode, String gatewayType) {
-    return switch (gatewayType.toLowerCase()) {
-      case "paystack" -> jsonNode.has("event") ? jsonNode.get("event").asText() : "unknown";
-      case "paypal" -> jsonNode.has("event_type") ? jsonNode.get("event_type").asText() : "unknown";
-      default -> jsonNode.has("event_type") ? jsonNode.get("event_type").asText() : "unknown";
-    };
+    return jsonNode.has("event") ? jsonNode.get("event").asText() : "unknown";
   }
 
   private String extractTransactionId(JsonNode jsonNode, String gatewayType) {
-    return switch (gatewayType.toLowerCase()) {
-      case "paystack" -> jsonNode.path("data").path("reference").asText();
-      case "paypal" -> jsonNode.path("resource").path("id").asText();
-      default -> jsonNode.has("transaction_id") ? jsonNode.get("transaction_id").asText() : "";
-    };
+    return jsonNode.path("data").path("reference").asText();
   }
 
   private String extractReference(JsonNode jsonNode, String gatewayType) {
-    return switch (gatewayType.toLowerCase()) {
-      case "paystack" -> jsonNode.path("data").path("reference").asText();
-      case "paypal" -> jsonNode.path("resource").path("id").asText();
-      default -> jsonNode.has("reference") ? jsonNode.get("reference").asText() : "";
-    };
+    return jsonNode.path("data").path("reference").asText();
   }
 
   private String extractResponseCode(JsonNode jsonNode, String gatewayType) {
-    return switch (gatewayType.toLowerCase()) {
-      case "paystack" -> jsonNode.path("data").path("status").asText();
-      case "paypal" -> jsonNode.path("resource").path("state").asText();
-      default -> jsonNode.has("response_code") ? jsonNode.get("response_code").asText() : "";
-    };
+    return jsonNode.path("data").path("status").asText();
   }
 
   private String extractResponseMessage(JsonNode jsonNode, String gatewayType) {
-    return switch (gatewayType.toLowerCase()) {
-      case "paystack" -> jsonNode.path("data").path("message").asText();
-      case "paypal" -> jsonNode.path("resource").path("status_details").path("reason").asText();
-      default -> jsonNode.has("response_message") ? jsonNode.get("response_message").asText() : "";
-    };
+    return jsonNode.path("data").path("message").asText();
   }
 }

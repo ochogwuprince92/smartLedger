@@ -27,11 +27,11 @@ class ErrorCodesTest {
   }
 
   @Test
-  @DisplayName("Should have correct code and message for NOT_FOUND")
+  @DisplayName("Should have correct code and message for NOT_FOUND (moved to ERR-3 range)")
   void shouldHaveCorrectCodeAndMessageForNotFound() {
     ErrorCodes error = ErrorCodes.NOT_FOUND;
 
-    assertEquals("ERR-1002", error.getCode());
+    assertEquals("ERR-3005", error.getCode());
     assertEquals("Resource not found", error.getMessage());
   }
 
@@ -337,7 +337,7 @@ class ErrorCodesTest {
   void shouldHaveAllErrorCodesInCorrectRanges() {
     assertEquals("ERR-1000", ErrorCodes.INTERNAL_SERVER_ERROR.getCode());
     assertEquals("ERR-2005", ErrorCodes.PAYMENT_NOT_FOUND.getCode());
-    assertEquals("ERR-3004", ErrorCodes.INVALID_ACCOUNT_HIERARCHY.getCode());
+    assertEquals("ERR-3005", ErrorCodes.NOT_FOUND.getCode());
     assertEquals("ERR-4004", ErrorCodes.JOURNAL_ENTRY_LOCKED.getCode());
     assertEquals("ERR-5003", ErrorCodes.RECONCILIATION_ALREADY_COMPLETED.getCode());
     assertEquals("ERR-6002", ErrorCodes.REPORT_NOT_FOUND.getCode());

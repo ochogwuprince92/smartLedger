@@ -5,7 +5,6 @@ public enum ErrorCodes {
   // General errors (1000-1999)
   INTERNAL_SERVER_ERROR("ERR-1000", "Internal server error"),
   VALIDATION_ERROR("ERR-1001", "Validation error"),
-  NOT_FOUND("ERR-1002", "Resource not found"),
   BAD_REQUEST("ERR-1003", "Bad request"),
   UNAUTHORIZED("ERR-1004", "Unauthorized"),
   FORBIDDEN("ERR-1005", "Forbidden"),
@@ -26,6 +25,7 @@ public enum ErrorCodes {
   ACCOUNT_BALANCE_INSUFFICIENT("ERR-3002", "Insufficient account balance"),
   ACCOUNT_ALREADY_EXISTS("ERR-3003", "Account already exists"),
   INVALID_ACCOUNT_HIERARCHY("ERR-3004", "Invalid account hierarchy"),
+  NOT_FOUND("ERR-3005", "Resource not found"),
 
   // Journal errors (4000-4999)
   JOURNAL_ENTRY_NOT_FOUND("ERR-4000", "Journal entry not found"),
@@ -53,7 +53,16 @@ public enum ErrorCodes {
   // AI errors (8000-8999)
   AI_SERVICE_UNAVAILABLE("ERR-8000", "AI service unavailable"),
   AI_INSIGHT_GENERATION_FAILED("ERR-8001", "AI insight generation failed"),
-  INVALID_AI_PARAMETERS("ERR-8002", "Invalid AI parameters");
+  INVALID_AI_PARAMETERS("ERR-8002", "Invalid AI parameters"),
+
+  // Authentication errors (9000-9999)
+  INVALID_PASSWORD_RESET_TOKEN("ERR-9000", "Invalid or expired password reset token"),
+  PASSWORD_RESET_TOKEN_EXPIRED("ERR-9001", "Password reset token has expired"),
+  PASSWORD_RESET_TOKEN_USED("ERR-9002", "Password reset token has already been used"),
+  INVALID_SERVICE_API_KEY("ERR-9003", "Invalid or missing service API key"),
+  SERVICE_CREDENTIAL_DISABLED("ERR-9004", "Service credential is disabled"),
+  SERVICE_CREDENTIAL_NOT_FOUND("ERR-9005", "Service credential not found"),
+  SERVICE_CREDENTIAL_MANAGE("ERR-9006", "Service credential management permission required");
 
   private final String code;
   private final String message;

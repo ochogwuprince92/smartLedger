@@ -4,6 +4,9 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 application-local.yml
+application-test.yml
+.env
+flyway.toml
 
 ### STS ###
 .apt_generated
@@ -32,4 +35,5 @@ build/
 
 ### VS Code ###
 .vscode/
-application-dev.ymlflyway-10.15.0/
+application-dev.yml
+flyway-10.15.0/

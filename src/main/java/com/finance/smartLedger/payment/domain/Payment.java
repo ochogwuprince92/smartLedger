@@ -90,6 +90,12 @@ public class Payment extends AuditableEntity {
   @Column(name = "metadata")
   private String metadata;
 
+  @Column(name = "authorization_url", length = 500)
+  private String authorizationUrl;
+
+  @Column(name = "callback_url", length = 500)
+  private String callbackUrl;
+
   public Payment(
       String paymentNumber,
       String idempotencyKey,

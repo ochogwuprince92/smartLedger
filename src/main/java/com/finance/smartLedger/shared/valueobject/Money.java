@@ -1,5 +1,7 @@
 package com.finance.smartLedger.shared.valueobject;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.Embeddable;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -98,6 +100,32 @@ public class Money {
     BigDecimal bdAmount = BigDecimal.valueOf(amount);
     validate(bdAmount, currencyCode);
     return new Money(bdAmount, currencyCode);
+  }
+
+  @JsonCreator
+  public static Money fromJson(
+      @JsonProperty("amount") Object amount,
+      @JsonProperty("currencyCode") String currencyCode) {
+    if (amount == null && currencyCode == null) {
+      return zero("USD");
+    }
+    
+    BigDecimal bdAmount;
+    if (amount instanceof Number) {
+      bdAmount = BigDecimal.valueOf(((Number) amount).doubleValue());
+    } else if (amount instanceof BigDecimal) {
+      bdAmount = (BigDecimal) amount;
+    } else if (amount instanceof String) {
+      bdAmount = new BigDecimal((String) amount);
+    } else {
+      throw new IllegalArgumentException("Invalid amount type: " + amount.getClass());
+    }
+    
+    if (currencyCode == null || currencyCode.trim().isEmpty()) {
+      currencyCode = "USD";
+    }
+    
+    return of(bdAmount, currencyCode);
   }
 
   @Override

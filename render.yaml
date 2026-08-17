@@ -1,0 +1,67 @@
+services:
+  # PostgreSQL Database
+  - type: postgres
+    name: smartledger-db
+    plan: free
+    databaseName: smartledger_db
+    user: postgres
+
+  # Redis (using Redis Cloud free tier via external service)
+
+  # Spring Boot Web Application
+  - type: web
+    name: smartledger-app
+    env: docker
+    plan: free
+    dockerContext: .
+    dockerfilePath: Dockerfile
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod
+      - key: DATASOURCE_URL
+        fromService:
+          type: pserv
+          name: smartledger-db
+          property: connectionString
+      - key: DATASOURCE_USERNAME
+        fromService:
+          type: pserv
+          name: smartledger-db
+          envVar: POSTGRES_USER
+      - key: DATASOURCE_PASSWORD
+        fromService:
+          type: pserv
+          name: smartledger-db
+          envVar: POSTGRES_PASSWORD
+      - key: REDIS_HOST
+        value: your-redis-cloud-host.com  # Replace with Redis Cloud/Upstash host
+      - key: REDIS_PORT
+        value: 6379
+      - key: REDIS_PASSWORD
+        value: your-redis-password  # Replace with Redis Cloud/Upstash password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION
+        value: 86400000
+      - key: ADMIN_EMAIL
+        value: admin.smartledger@gmail.com
+      - key: ADMIN_PASSWORD
+        generateValue: true
+      - key: APP_BASE_URL
+        value: https://smartledger-app.onrender.com
+      - key: N8N_BASE_URL
+        value: https://your-n8n-instance.com  # Replace with your n8n instance
+      - key: N8N_WEBHOOK_PATH
+        value: /webhook/finance-ai-insight
+      - key: N8N_CALLBACK_SECRET
+        generateValue: true
+      - key: MAIL_HOST
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USERNAME
+        value: ochogwuprince@gmail.com  # Replace with your email
+      - key: MAIL_PASSWORD
+        value: your-app-password  # Replace with app password
+      - key: APP_EMAIL_ENABLED
+        value: true

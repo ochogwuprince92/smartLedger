@@ -36,14 +36,14 @@ public class Role extends AuditableEntity {
       inverseJoinColumns = @JoinColumn(name = "permission_id"))
   private Set<Permission> permissions = new HashSet<>();
 
-  @ManyToMany(fetch = FetchType.LAZY)
+  @ManyToMany(fetch = FetchType.EAGER)
   @JoinTable(
       name = "role_hierarchy",
       joinColumns = @JoinColumn(name = "parent_role_id"),
       inverseJoinColumns = @JoinColumn(name = "child_role_id"))
   private Set<Role> childRoles = new HashSet<>();
 
-  @ManyToMany(fetch = FetchType.LAZY, mappedBy = "childRoles")
+  @ManyToMany(fetch = FetchType.EAGER, mappedBy = "childRoles")
   private Set<Role> parentRoles = new HashSet<>();
 
   public Role(String code, String name) {

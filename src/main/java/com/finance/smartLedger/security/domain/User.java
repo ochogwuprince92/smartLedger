@@ -53,6 +53,9 @@ public class User extends AuditableEntity {
   @Column(name = "credentials_non_expired", nullable = false)
   private Boolean credentialsNonExpired = true;
 
+  @Column(name = "must_change_password", nullable = false)
+  private Boolean mustChangePassword = false;
+
   @Column(name = "last_login_at")
   private LocalDateTime lastLoginAt;
 

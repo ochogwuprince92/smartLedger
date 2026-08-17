@@ -13,17 +13,6 @@ public class NotificationScheduler {
 
   private final NotificationService notificationService;
 
-  @Scheduled(fixedRate = 300000) // Run every 5 minutes
-  public void processRetryableNotifications() {
-    try {
-      log.info("Processing retryable notifications");
-      var notifications = notificationService.processRetryableNotifications();
-      log.info("Processed {} retryable notifications", notifications.size());
-    } catch (Exception e) {
-      log.error("Error processing retryable notifications", e);
-    }
-  }
-
   @Scheduled(fixedRate = 60000) // Run every 1 minute
   public void processScheduledNotifications() {
     try {

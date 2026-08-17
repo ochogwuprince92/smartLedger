@@ -119,6 +119,28 @@ public class ReportController {
     return ResponseEntity.ok(ApiResponse.success("Report deleted successfully", null));
   }
 
+  @PostMapping("/reports/balance-sheet")
+  @Operation(summary = "Generate balance sheet", description = "Generates a balance sheet report")
+  @PreAuthorize("hasAuthority('REPORTING:CREATE')")
+  public ResponseEntity<ApiResponse<ReportResponse>> generateBalanceSheet(
+      @RequestBody @Valid CreateReportRequest request) {
+    Report report =
+        reportService.createReport(
+            request.reportNumber(),
+            request.reportDate(),
+            ReportType.BALANCE_SHEET,
+            request.periodStartDate(),
+            request.periodEndDate(),
+            request.currencyCode(),
+            request.description(),
+            "system");
+    
+    report = reportService.generateReport(report.getId(), "system");
+    
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(ApiResponse.success("Balance sheet generated successfully", ReportResponse.from(report)));
+  }
+
   public record ActionRequest(
       @Schema(description = "User performing the action") String updatedBy) {}
 }

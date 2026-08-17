@@ -19,4 +19,5 @@ public record CreateReconciliationRequest(
     @Schema(description = "Total expected amount", required = true) @NotNull
         BigDecimal totalExpectedAmount,
     @Schema(description = "Description", example = "Monthly bank reconciliation")
-        String description) {}
+        String description,
+    @Schema(description = "Period", example = "MONTHLY") String period) {}

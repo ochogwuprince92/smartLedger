@@ -1,25 +1,16 @@
 spring:
+
   application:
     name: smartLedger
   profiles:
     active: local
 
-  datasource:
-    url: ${DATASOURCE_URL:jdbc:postgresql://localhost:5432/smartledger_db}
-    username: ${DATASOURCE_USERNAME:postgres}
-    password: ${DATASOURCE_PASSWORD:postgres}
-    driver-class-name: org.postgresql.Driver
-    hikari:
-      maximum-pool-size: 10
-      minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
-
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}
     port: ${MAIL_PORT:587}
     protocol: ${MAIL_PROTOCOL:smtp}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
     properties:
       mail:
         smtp:
@@ -34,7 +25,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     properties:
       hibernate:
@@ -71,7 +62,7 @@ spring:
       max-request-size: 10MB
 
 server:
-  port: 8081
+  port: ${PORT:8081}
   servlet:
     context-path: /
   error:
@@ -100,10 +91,14 @@ app:
   data-loader:
     enabled: false
   base-url: ${APP_BASE_URL:http://localhost:8081}
+  email:
+    enabled: ${APP_EMAIL_ENABLED:false}
+    from: ${APP_EMAIL_FROM:noreply@smartledger.com}
+    from-name: ${APP_EMAIL_FROM_NAME:SmartLedger}
 
 jwt:
   secret: ${JWT_SECRET}
-  expiration: ${JWT_EXPIRATION:86400000}
+  expiration: ${JWT_EXPIRATION}
 
 admin:
   email: ${ADMIN_EMAIL}
@@ -120,4 +115,6 @@ payment:
     paystack:
       secret-key: ${PAYSTACK_SECRET_KEY:}
       public-key: ${PAYSTACK_PUBLIC_KEY:}
-      base-url: ${PAYSTACK_BASE_URL:https://api.paystack.co}
+      callback-url: ${PAYSTACK_CALLBACK_URL:http://localhost:8081/api/payment/callback/paystack}
+      webhook-url: ${PAYSTACK_WEBHOOK_URL:http://localhost:8081/api/payment/webhook/paystack}
+      api-url: ${PAYSTACK_API_URL:https://api.paystack.co}

@@ -12,11 +12,18 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,6 +32,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/payment")
 @RequiredArgsConstructor
+@Slf4j
 @Tag(name = "Payment", description = "Payment processing endpoints")
 public class PaymentController {
 
@@ -35,11 +43,12 @@ public class PaymentController {
   @Operation(summary = "Create payment", description = "Creates a new payment")
   @PreAuthorize("hasAuthority('PAYMENT:CREATE')")
   public ResponseEntity<ApiResponse<PaymentResponse>> createPayment(
+      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
       @RequestBody @Valid CreatePaymentRequest request) {
     Payment payment =
         paymentService.createPayment(
             request.paymentNumber(),
-            UUID.randomUUID().toString(),
+            idempotencyKey,
             request.invoiceId(),
             request.paymentDate(),
             request.paymentMethod().toDomain(),
@@ -49,6 +58,7 @@ public class PaymentController {
             request.payerEmail(),
             request.payerPhone(),
             request.description(),
+            request.callbackUrl(),
             "system");
 
     return ResponseEntity.status(HttpStatus.CREATED)
@@ -136,6 +146,78 @@ public class PaymentController {
     }
   }
 
+  @GetMapping("/callback/paystack")
+  @Operation(summary = "Handle Paystack callback", description = "Handles Paystack payment callback after user completes payment and triggers verification")
+  public ResponseEntity<ApiResponse<Map<String, Object>>> handleCallback(
+      @RequestParam(required = false) String reference,
+      @RequestParam(required = false) String trxref) {
+    Map<String, Object> response = new HashMap<>();
+    String paymentReference = reference != null ? reference : trxref;
+    
+    if (paymentReference != null) {
+      try {
+        // Trigger payment verification and completion
+        paymentService.verifyPayment(paymentReference, "callback");
+        
+        response.put("reference", paymentReference);
+        response.put("message", "Payment verified and processed successfully");
+        response.put("status", "verified");
+        return ResponseEntity.ok(ApiResponse.success("Payment verified", response));
+      } catch (IllegalArgumentException e) {
+        // Payment not found - still acknowledge callback
+        response.put("reference", paymentReference);
+        response.put("message", "Payment callback received but payment not found. Status will be updated via webhook.");
+        response.put("status", "pending_webhook");
+        return ResponseEntity.ok(ApiResponse.success("Callback received", response));
+      } catch (Exception e) {
+        log.error("Error processing payment callback for reference: {}", paymentReference, e);
+        response.put("reference", paymentReference);
+        response.put("message", "Payment callback received but verification failed. Status will be updated via webhook.");
+        response.put("status", "verification_failed");
+        return ResponseEntity.ok(ApiResponse.success("Callback received with error", response));
+      }
+    } else {
+      response.put("message", "No payment reference provided");
+      return ResponseEntity.ok(ApiResponse.success("Callback received without reference", response));
+    }
+  }
+
+  @GetMapping("/verify/{reference}")
+  @Operation(summary = "Verify payment", description = "Verifies a payment with the gateway using its reference and updates payment status")
+  @PreAuthorize("hasAuthority('PAYMENT:READ')")
+  public ResponseEntity<ApiResponse<com.finance.smartLedger.payment.application.dto.PaymentVerifyResponse>> verifyPayment(
+      @Parameter(description = "Payment reference from gateway") @PathVariable String reference) {
+    com.finance.smartLedger.payment.application.dto.PaymentVerifyResponse verificationResponse =
+        paymentService.verifyPayment(reference, "api");
+    return ResponseEntity.ok(ApiResponse.success("Payment verified", verificationResponse));
+  }
+
+  @PostMapping("/initiate-gateway-payment")
+  @Operation(summary = "Initiate gateway payment", description = "Initiates a payment using payment gateway and returns authorization URL for redirect")
+  @PreAuthorize("hasAuthority('PAYMENT:CREATE')")
+  public ResponseEntity<ApiResponse<PaymentResponse>> initiateGatewayPayment(
+      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey,
+      @RequestBody @Valid GatewayPaymentRequest request) {
+    Payment payment =
+        paymentService.createPayment(
+            request.paymentNumber(),
+            idempotencyKey,
+            request.invoiceId(),
+            request.paymentDate(),
+            request.paymentMethod().toDomain(),
+            request.amount(),
+            request.currencyCode(),
+            request.payerName(),
+            request.payerEmail(),
+            request.payerPhone(),
+            request.description(),
+            request.callbackUrl(),
+            "api");
+
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(ApiResponse.success("Payment initiated successfully.Redirect to authorizationUrl to complete payment.", PaymentResponse.from(payment)));
+  }
+
   @GetMapping("/payments/{id}")
   @Operation(summary = "Get payment by ID", description = "Retrieves a payment by its ID")
   @PreAuthorize("hasAuthority('PAYMENT:READ')")
@@ -211,4 +293,22 @@ public class PaymentController {
       @Schema(description = "Gateway response code") String gatewayResponseCode,
       @Schema(description = "Gateway response message") String gatewayResponseMessage,
       @Schema(description = "User failing the payment") String updatedBy) {}
+
+  public record GatewayPaymentRequest(
+      @Schema(description = "Payment number", example = "PAY-2024-001", required = true) @NotBlank
+          String paymentNumber,
+      @Schema(description = "Invoice ID (optional, for fee payments)") UUID invoiceId,
+      @Schema(description = "Payment date", required = true) @NotNull LocalDateTime paymentDate,
+      @Schema(description = "Payment method", required = true) @NotNull
+          PaymentMethodDto paymentMethod,
+      @Schema(description = "Amount", required = true) @NotNull @Positive BigDecimal amount,
+      @Schema(description = "Currency code", example = "USD", required = true) @NotBlank
+          String currencyCode,
+      @Schema(description = "Payer name", example = "John Doe") String payerName,
+      @Schema(description = "Payer email", example = "john@example.com") @NotBlank String payerEmail,
+      @Schema(description = "Payer phone", example = "+1234567890") String payerPhone,
+      @Schema(description = "Description", example = "Payment for invoice #123")
+          String description,
+      @Schema(description = "Callback URL for payment gateway redirect", example = "https://example.com/payment/callback")
+          @NotBlank String callbackUrl) {}
 }

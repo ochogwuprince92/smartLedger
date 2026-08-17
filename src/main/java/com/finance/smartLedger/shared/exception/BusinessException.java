@@ -48,6 +48,9 @@ public class BusinessException extends RuntimeException {
       return HttpStatus.SERVICE_UNAVAILABLE;
     } else if (code.startsWith("ERR-8")) {
       return HttpStatus.SERVICE_UNAVAILABLE;
+    } else if (code.startsWith("ERR-9")) {
+      if (code.equals("ERR-9006")) return HttpStatus.FORBIDDEN;
+      return HttpStatus.UNAUTHORIZED;
     }
     return HttpStatus.INTERNAL_SERVER_ERROR;
   }

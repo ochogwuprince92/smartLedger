@@ -8,42 +8,18 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" th:href="@{/dashboard}">
-                <i class="fas fa-chart-line me-2"></i>SmartLedger
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/dashboard}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/fees}">Fee Management</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/payments}">Payments</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/ledger}">Ledger</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/reconciliation}">Reconciliation</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
+    <div th:replace="~{fragments/layout :: navbar('reconciliation')}"></div>
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="h2 fw-bold">Reconciliation</h1>
-            <button class="btn btn-primary" onclick="startReconciliation()">
-                <i class="fas fa-sync me-2"></i>Start Reconciliation
-            </button>
+            <div>
+                <button class="btn btn-outline-secondary me-2" onclick="showCreateReconciliationModal()" sec:authorize="hasAuthority('RECONCILIATION:CREATE')">
+                    <i class="fas fa-plus me-2"></i>New Reconciliation
+                </button>
+                <button class="btn btn-primary" onclick="startReconciliation()" sec:authorize="hasAuthority('RECONCILIATION:EXECUTE')">
+                    <i class="fas fa-sync me-2"></i>Start Reconciliation
+                </button>
+            </div>
         </div>
 
         <!-- Reconciliation Stats -->
@@ -121,7 +97,179 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- New Reconciliation Modal -->
+    <div class="modal fade" id="createReconciliationModal" tabindex="-1" sec:authorize="hasAuthority('RECONCILIATION:CREATE')">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">New Reconciliation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createReconciliationForm">
+                        <div class="mb-3">
+                            <label class="form-label">Reconciliation Number</label>
+                            <input type="text" class="form-control" id="reconciliationNumber" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Reconciliation Date</label>
+                            <input type="date" class="form-control" id="reconciliationDate" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Source System</label>
+                            <input type="text" class="form-control" id="sourceSystem" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Source Reference</label>
+                            <input type="text" class="form-control" id="sourceReference">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Total Expected Amount</label>
+                            <input type="number" class="form-control" id="totalExpectedAmount" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="reconciliationDescription" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createReconciliation()">Create</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Reconciliation Item Modal -->
+    <div class="modal fade" id="addItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Add Reconciliation Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="addItemForm">
+                        <input type="hidden" id="addItemReconciliationId">
+                        <div class="mb-3">
+                            <label class="form-label">Item Reference</label>
+                            <input type="text" class="form-control" id="itemReference" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Item Type</label>
+                            <select class="form-select" id="itemType" required>
+                                <option value="">Select Type</option>
+                                <option value="PAYMENT">Payment</option>
+                                <option value="INVOICE">Invoice</option>
+                                <option value="REFUND">Refund</option>
+                                <option value="ADJUSTMENT">Adjustment</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Expected Amount</label>
+                            <input type="number" class="form-control" id="expectedAmount" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="itemDescription" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addItem()">Add Item</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- View Reconciliation Items Modal -->
+    <div class="modal fade" id="viewItemsModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Reconciliation Items</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>Reference</th>
+                                    <th>Type</th>
+                                    <th>Expected Amount</th>
+                                    <th>Actual Amount</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reconciliationItemsTableBody">
+                                <!-- Dynamic content -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Match Item Modal -->
+    <div class="modal fade" id="matchItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Match Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="matchItemForm">
+                        <input type="hidden" id="matchItemId">
+                        <div class="mb-3">
+                            <label class="form-label">Transaction ID</label>
+                            <input type="text" class="form-control" id="transactionId" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Actual Amount</label>
+                            <input type="number" class="form-control" id="actualAmount" step="0.01" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="matchItem()">Match</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Move to Suspense Modal -->
+    <div class="modal fade" id="suspenseModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Move to Suspense Account</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="suspenseForm">
+                        <input type="hidden" id="suspenseItemId">
+                        <div class="mb-3">
+                            <label class="form-label">Suspense Account ID</label>
+                            <input type="text" class="form-control" id="suspenseAccountId" required>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning" onclick="moveToSuspense()">Move to Suspense</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: scripts}"></div>
     <script>
         const API_BASE = '/api/reconciliation';
 
@@ -154,7 +302,11 @@
                     <td>${rec.variance || '0.00'}</td>
                     <td><span class="badge ${getStatusBadgeClass(rec.status)}">${rec.status}</span></td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" onclick="viewReconciliation('${rec.id}')"><i class="fas fa-eye"></i></button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="viewReconciliationItems('${rec.id}')"><i class="fas fa-list"></i> Items</button>
+                        ${rec.status === 'PENDING' ? `
+                            <button class="btn btn-sm btn-outline-success me-1" onclick="startAutoMatch('${rec.id}')"><i class="fas fa-sync"></i> Auto-Match</button>
+                            <button class="btn btn-sm btn-outline-warning me-1" onclick="showAddItemModal('${rec.id}')"><i class="fas fa-plus"></i> Add Item</button>
+                        ` : ''}
                         ${rec.status === 'COMPLETED' ? `<button class="btn btn-sm btn-outline-success" onclick="downloadReport('${rec.id}')"><i class="fas fa-download"></i></button>` : ''}
                     </td>
                 </tr>
@@ -194,6 +346,250 @@
                 }
             } catch (error) {
                 console.error('Error starting reconciliation:', error);
+            }
+        }
+
+        // Show new reconciliation modal
+        function showCreateReconciliationModal() {
+            document.getElementById('createReconciliationForm').reset();
+            document.getElementById('reconciliationDate').value = new Date().toISOString().split('T')[0];
+            new bootstrap.Modal(document.getElementById('createReconciliationModal')).show();
+        }
+
+        // New reconciliation
+        async function createReconciliation() {
+            const reconciliation = {
+                reconciliationNumber: document.getElementById('reconciliationNumber').value,
+                reconciliationDate: document.getElementById('reconciliationDate').value,
+                sourceSystem: document.getElementById('sourceSystem').value,
+                sourceReference: document.getElementById('sourceReference').value,
+                totalExpectedAmount: parseFloat(document.getElementById('totalExpectedAmount').value),
+                description: document.getElementById('reconciliationDescription').value
+            };
+
+            if (!reconciliation.reconciliationNumber || !reconciliation.reconciliationDate || !reconciliation.sourceSystem || !reconciliation.totalExpectedAmount) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/reconciliations`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(reconciliation)
+                });
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('createReconciliationModal')).hide();
+                    document.getElementById('createReconciliationForm').reset();
+                    loadReconciliations();
+                } else {
+                    alert('Failed to create');
+                }
+            } catch (error) {
+                console.error('Error creating:', error);
+                alert('Error creating');
+            }
+        }
+
+        // Show add item modal
+        function showAddItemModal(reconciliationId) {
+            document.getElementById('addItemReconciliationId').value = reconciliationId;
+            document.getElementById('addItemForm').reset();
+            new bootstrap.Modal(document.getElementById('addItemModal')).show();
+        }
+
+        // Add reconciliation item
+        async function addItem() {
+            const item = {
+                itemReference: document.getElementById('itemReference').value,
+                itemType: document.getElementById('itemType').value,
+                expectedAmount: parseFloat(document.getElementById('expectedAmount').value),
+                description: document.getElementById('itemDescription').value
+            };
+
+            if (!item.itemReference || !item.itemType || !item.expectedAmount) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const reconciliationId = document.getElementById('addItemReconciliationId').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/reconciliations/${reconciliationId}/items`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(item)
+                });
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('addItemModal')).hide();
+                    document.getElementById('addItemForm').reset();
+                    loadReconciliations();
+                } else {
+                    alert('Failed to add item');
+                }
+            } catch (error) {
+                console.error('Error adding item:', error);
+                alert('Error adding item');
+            }
+        }
+
+        // View reconciliation items
+        async function viewReconciliationItems(reconciliationId) {
+            try {
+                const response = await fetch(`${API_BASE}/reconciliations/${reconciliationId}/items`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    renderReconciliationItems(data.data);
+                    new bootstrap.Modal(document.getElementById('viewItemsModal')).show();
+                }
+            } catch (error) {
+                console.error('Error loading items:', error);
+                alert('Error loading items');
+            }
+        }
+
+        function renderReconciliationItems(items) {
+            const tbody = document.getElementById('reconciliationItemsTableBody');
+            tbody.innerHTML = items.map(item => `
+                <tr>
+                    <td>${item.itemReference}</td>
+                    <td>${item.itemType}</td>
+                    <td>${item.expectedAmount}</td>
+                    <td>${item.actualAmount || '-'}</td>
+                    <td><span class="badge ${getItemStatusBadge(item.status)}">${item.status}</span></td>
+                    <td>
+                        ${item.status === 'UNMATCHED' ? `
+                            <button class="btn btn-sm btn-outline-success me-1" onclick="showMatchItemModal('${item.id}')">
+                                <i class="fas fa-link"></i> Match
+                            </button>
+                            <button class="btn btn-sm btn-outline-warning" onclick="showSuspenseModal('${item.id}')">
+                                <i class="fas fa-arrow-right"></i> Suspense
+                            </button>
+                        ` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getItemStatusBadge(status) {
+            switch(status) {
+                case 'MATCHED': return 'bg-success';
+                case 'UNMATCHED': return 'bg-warning';
+                case 'SUSPENSE': return 'bg-danger';
+                default: return 'bg-secondary';
+            }
+        }
+
+        // Start auto-match
+        async function startAutoMatch(reconciliationId) {
+            if (!confirm('Start auto-match for this reconciliation?')) return;
+
+            try {
+                const response = await fetch(`${API_BASE}/reconciliations/${reconciliationId}/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ updatedBy: 'system' })
+                });
+                
+                if (response.ok) {
+                    loadReconciliations();
+                    alert('Auto-match started successfully');
+                } else {
+                    alert('Failed to start auto-match');
+                }
+            } catch (error) {
+                console.error('Error starting auto-match:', error);
+                alert('Error starting auto-match');
+            }
+        }
+
+        // Show match item modal
+        function showMatchItemModal(itemId) {
+            document.getElementById('matchItemId').value = itemId;
+            document.getElementById('matchItemForm').reset();
+            new bootstrap.Modal(document.getElementById('matchItemModal')).show();
+        }
+
+        // Match item
+        async function matchItem() {
+            const itemId = document.getElementById('matchItemId').value;
+            const matchData = {
+                transactionId: document.getElementById('transactionId').value,
+                actualAmount: parseFloat(document.getElementById('actualAmount').value),
+                updatedBy: 'system'
+            };
+
+            if (!matchData.transactionId || !matchData.actualAmount) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/items/${itemId}/match`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(matchData)
+                });
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('matchItemModal')).hide();
+                    document.getElementById('matchItemForm').reset();
+                    // Reload items
+                    const reconciliationId = document.querySelector('#viewItemsModal').getAttribute('data-reconciliation-id');
+                    if (reconciliationId) viewReconciliationItems(reconciliationId);
+                    loadReconciliations();
+                } else {
+                    alert('Failed to match item');
+                }
+            } catch (error) {
+                console.error('Error matching item:', error);
+                alert('Error matching item');
+            }
+        }
+
+        // Show suspense modal
+        function showSuspenseModal(itemId) {
+            document.getElementById('suspenseItemId').value = itemId;
+            document.getElementById('suspenseForm').reset();
+            new bootstrap.Modal(document.getElementById('suspenseModal')).show();
+        }
+
+        // Move to suspense
+        async function moveToSuspense() {
+            const itemId = document.getElementById('suspenseItemId').value;
+            const suspenseData = {
+                suspenseAccountId: document.getElementById('suspenseAccountId').value,
+                updatedBy: 'system'
+            };
+
+            if (!suspenseData.suspenseAccountId) {
+                alert('Please enter suspense account ID');
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/items/${itemId}/suspense`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(suspenseData)
+                });
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('suspenseModal')).hide();
+                    document.getElementById('suspenseForm').reset();
+                    // Reload items
+                    const reconciliationId = document.querySelector('#viewItemsModal').getAttribute('data-reconciliation-id');
+                    if (reconciliationId) viewReconciliationItems(reconciliationId);
+                    loadReconciliations();
+                } else {
+                    alert('Failed to move to suspense');
+                }
+            } catch (error) {
+                console.error('Error moving to suspense:', error);
+                alert('Error moving to suspense');
             }
         }
 

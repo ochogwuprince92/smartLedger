@@ -23,7 +23,9 @@ public class WebhookSignatureValidator {
   public boolean validatePaystackSignature(String payload, String signature) {
     try {
       String expectedSignature = calculateHmacSha512(payload, paystackSecretKey);
-      boolean isValid = expectedSignature.equals(signature);
+      boolean isValid = java.security.MessageDigest.isEqual(
+          expectedSignature.getBytes(StandardCharsets.UTF_8),
+          signature != null ? signature.getBytes(StandardCharsets.UTF_8) : new byte[0]);
 
       if (!isValid) {
         log.warn("Invalid Paystack webhook signature");

@@ -1,6 +1,9 @@
 package com.finance.smartLedger.security.config;
 
 import com.finance.smartLedger.security.filter.JwtAuthenticationFilter;
+import com.finance.smartLedger.security.filter.ServiceApiKeyAuthenticationFilter;
+import com.finance.smartLedger.security.handler.CustomAccessDeniedHandler;
+import com.finance.smartLedger.security.handler.CustomAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -26,7 +29,10 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class WebSecurityConfig {
 
   private final JwtAuthenticationFilter jwtAuthenticationFilter;
+  private final ServiceApiKeyAuthenticationFilter serviceApiKeyAuthenticationFilter;
   private final UserDetailsService userDetailsService;
+  private final CustomAccessDeniedHandler customAccessDeniedHandler;
+  private final CustomAuthenticationEntryPoint customAuthenticationEntryPoint;
 
   @Bean
   public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -34,19 +40,32 @@ public class WebSecurityConfig {
         .authorizeHttpRequests(
             auth ->
                 auth.requestMatchers(
-                        "/",
+                        "/login",
+                        "/login-web",
+                        "/forgot-password",
+                        "/reset-password",
+                        "/reset-password-form",
+                        "/change-password",
+                        "/logout",
                         "/api/v1/auth/**",
                         "/actuator/health",
                         "/actuator/info",
                         "/v3/api-docs/**",
                         "/swagger-ui/**",
-                        "/swagger-ui.html")
+                        "/swagger-ui.html",
+                        "/api/payment/callback/**",
+                        "/api/payment/webhook/**")
                     .permitAll()
                     .anyRequest()
                     .authenticated())
+        .exceptionHandling(
+            exception -> exception
+                .accessDeniedHandler(customAccessDeniedHandler)
+                .authenticationEntryPoint(customAuthenticationEntryPoint))
         .sessionManagement(
             session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .authenticationProvider(authenticationProvider())
+        .addFilterBefore(serviceApiKeyAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
         .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
     return http.build();

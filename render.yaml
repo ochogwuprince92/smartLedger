@@ -64,6 +64,5 @@ services:
       # - key: MAIL_USERNAME
       #   value: your-email@gmail.com
       # - key: MAIL_PASSWORD
-      #   value: your-app-password
       - key: APP_EMAIL_ENABLED
         value: false

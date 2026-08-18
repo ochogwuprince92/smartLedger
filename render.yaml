@@ -31,11 +31,20 @@ services:
           name: smartledger-db
           property: host
       - key: DATASOURCE_USERNAME
-        value: postgres
+        fromService:
+          type: pserv
+          name: smartledger-db
+          envVarKey: POSTGRES_USER
       - key: DATASOURCE_PASSWORD
-        value: change_this_password_in_render_dashboard
+        fromService:
+          type: pserv
+          name: smartledger-db
+          envVarKey: POSTGRES_PASSWORD
       - key: POSTGRES_DB
-        value: smartledger_db
+        fromService:
+          type: pserv
+          name: smartledger-db
+          envVarKey: POSTGRES_DB
       # Redis - Set these in Render dashboard after deployment
       # - key: REDIS_HOST
       #   value: your-redis-cloud-host.com

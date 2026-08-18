@@ -32,6 +32,8 @@
 		<testcontainers.version>1.19.3</testcontainers.version>
 		<springdoc.version>2.3.0</springdoc.version>
 		<flyway.version>10.4.1</flyway.version>
+		<selenium.version>4.27.0</selenium.version>
+		<webdrivermanager.version>5.9.2</webdrivermanager.version>
 	</properties>
 	<dependencies>
 		<!-- Spring Boot Starters -->
@@ -54,6 +56,10 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-thymeleaf</artifactId>
+		</dependency>
+		<dependency>
+			<groupId>org.thymeleaf.extras</groupId>
+			<artifactId>thymeleaf-extras-springsecurity6</artifactId>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -181,6 +187,18 @@
 			<version>${testcontainers.version}</version>
 			<scope>test</scope>
 		</dependency>
+		<dependency>
+			<groupId>org.seleniumhq.selenium</groupId>
+			<artifactId>selenium-java</artifactId>
+			<version>${selenium.version}</version>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.github.bonigarcia</groupId>
+			<artifactId>webdrivermanager</artifactId>
+			<version>${webdrivermanager.version}</version>
+			<scope>test</scope>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -242,6 +260,14 @@
 					</java>
 				</configuration>
 			</plugin>
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>${flyway.version}</version>
+				<configuration>
+					<locations>classpath:db/migration</locations>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
@@ -266,6 +292,22 @@
 			<properties>
 				<spring.profiles.active>prod</spring.profiles.active>
 			</properties>
+		</profile>
+		<profile>
+			<id>wsl2</id>
+			<build>
+				<plugins>
+					<plugin>
+						<groupId>org.apache.maven.plugins</groupId>
+						<artifactId>maven-surefire-plugin</artifactId>
+						<configuration>
+							<excludes>
+								<exclude>**/UITests/**</exclude>
+							</excludes>
+						</configuration>
+					</plugin>
+				</plugins>
+			</build>
 		</profile>
 	</profiles>
 

@@ -1,10 +1,14 @@
 package com.finance.smartLedger.payment.infrastructure.external;
 
+import com.finance.smartLedger.payment.application.dto.PaymentVerifyResponse;
+import com.finance.smartLedger.payment.infrastructure.config.PaystackProperties;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.HashMap;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -16,20 +20,17 @@ import org.springframework.web.client.RestTemplate;
 public class PaystackGatewayClient implements PaymentGatewayClient {
 
   private final RestTemplate restTemplate;
-  private final String secretKey;
-  private final String baseUrl;
+  private final PaystackProperties paystackProperties;
 
   public PaystackGatewayClient(
       RestTemplate restTemplate,
-      @Value("${payment.gateway.paystack.secret-key}") String secretKey,
-      @Value("${payment.gateway.paystack.base-url:https://api.paystack.co}") String baseUrl) {
+      PaystackProperties paystackProperties) {
     this.restTemplate = restTemplate;
-    this.secretKey = secretKey;
-    this.baseUrl = baseUrl;
+    this.paystackProperties = paystackProperties;
   }
 
   @Override
-  public String initiatePayment(
+  public PaystackInitiationResult initiatePayment(
       BigDecimal amount,
       String currency,
       String description,
@@ -38,10 +39,10 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
       Map<String, String> metadata) {
 
     try {
-      String url = baseUrl + "/transaction/initialize";
+      String url = paystackProperties.getApiUrl() + "/transaction/initialize";
 
       HttpHeaders headers = new HttpHeaders();
-      headers.setBearerAuth(secretKey);
+      headers.setBearerAuth(paystackProperties.getSecretKey());
       headers.setContentType(MediaType.APPLICATION_JSON);
 
       Map<String, Object> requestBody = new HashMap<>();
@@ -58,15 +59,20 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
       if (metadata != null) {
         requestBody.put("metadata", metadata);
       }
+      if (paystackProperties.getCallbackUrl() != null) {
+        requestBody.put("callback_url", paystackProperties.getCallbackUrl());
+      }
 
       HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
       Map<String, Object> response = restTemplate.postForObject(url, request, Map.class);
 
       Map<String, Object> data = (Map<String, Object>) response.get("data");
       String reference = (String) data.get("reference");
+      String authorizationUrl = (String) data.get("authorization_url");
+      String accessCode = (String) data.get("access_code");
 
       log.info("Paystack transaction initialized: {}", reference);
-      return reference;
+      return new PaystackInitiationResult(reference, authorizationUrl, accessCode);
 
     } catch (Exception e) {
       log.error("Failed to initiate Paystack payment", e);
@@ -77,10 +83,10 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
   @Override
   public String retrievePaymentStatus(String paymentId) {
     try {
-      String url = baseUrl + "/transaction/verify/" + paymentId;
+      String url = paystackProperties.getApiUrl() + "/transaction/verify/" + paymentId;
 
       HttpHeaders headers = new HttpHeaders();
-      headers.setBearerAuth(secretKey);
+      headers.setBearerAuth(paystackProperties.getSecretKey());
 
       HttpEntity<Void> request = new HttpEntity<>(headers);
       Map<String, Object> response =
@@ -98,12 +104,97 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
   }
 
   @Override
-  public boolean refundPayment(String paymentId, BigDecimal amount) {
+  public PaymentVerifyResponse verifyPayment(String reference) {
     try {
-      String url = baseUrl + "/refund";
+      String url = paystackProperties.getApiUrl() + "/transaction/verify/" + reference;
 
       HttpHeaders headers = new HttpHeaders();
-      headers.setBearerAuth(secretKey);
+      headers.setBearerAuth(paystackProperties.getSecretKey());
+
+      HttpEntity<Void> request = new HttpEntity<>(headers);
+      Map<String, Object> response =
+          restTemplate
+              .exchange(url, org.springframework.http.HttpMethod.GET, request, Map.class)
+              .getBody();
+
+      boolean status = (Boolean) response.getOrDefault("status", false);
+      String message = (String) response.getOrDefault("message", "Verification failed");
+
+      if (status && response.containsKey("data")) {
+        Map<String, Object> data = (Map<String, Object>) response.get("data");
+
+        // Parse customer information
+        PaymentVerifyResponse.PaymentData.Customer customer = null;
+        if (data.containsKey("customer")) {
+          Map<String, Object> customerData = (Map<String, Object>) data.get("customer");
+          customer = new PaymentVerifyResponse.PaymentData.Customer(
+              (String) customerData.get("email"),
+              (String) customerData.get("customer_code"));
+        }
+
+        // Parse authorization information
+        PaymentVerifyResponse.PaymentData.Authorization authorization = null;
+        if (data.containsKey("authorization")) {
+          Map<String, Object> authData = (Map<String, Object>) data.get("authorization");
+          authorization = new PaymentVerifyResponse.PaymentData.Authorization(
+              (String) authData.get("authorization_code"),
+              (String) authData.get("bin"),
+              (String) authData.get("last4"),
+              (String) authData.get("exp_month"),
+              (String) authData.get("exp_year"),
+              (String) authData.get("card_type"),
+              (String) authData.get("bank"));
+        }
+
+        // Parse metadata
+        Map<String, Object> metadata = new HashMap<>();
+        if (data.containsKey("metadata")) {
+          Map<String, Object> metadataData = (Map<String, Object>) data.get("metadata");
+          metadata.putAll(metadataData);
+        }
+
+        PaymentVerifyResponse.PaymentData paymentData = new PaymentVerifyResponse.PaymentData(
+            (String) data.get("reference"),
+            (String) data.get("gateway_response"),
+            parseDateTime((String) data.get("paid_at")),
+            parseDateTime((String) data.get("createdAt")),
+            (String) data.get("channel"),
+            (String) data.get("currency"),
+            data.get("amount") != null ? data.get("amount").toString() : null,
+            metadata,
+            customer,
+            authorization);
+
+        return new PaymentVerifyResponse(status, message, paymentData);
+      } else {
+        return new PaymentVerifyResponse(status, message, null);
+      }
+
+    } catch (Exception e) {
+      log.error("Failed to verify Paystack payment: {}", reference, e);
+      return new PaymentVerifyResponse(false, "Payment verification failed: " + e.getMessage(), null);
+    }
+  }
+
+  private LocalDateTime parseDateTime(String dateTime) {
+    if (dateTime == null || dateTime.isEmpty()) {
+      return null;
+    }
+    try {
+      return LocalDateTime.parse(dateTime, DateTimeFormatter.ISO_DATE_TIME);
+    } catch (DateTimeParseException e) {
+      log.warn("Failed to parse datetime: {}", dateTime);
+      return null;
+    }
+  }
+
+  @Override
+  public boolean refundPayment(String paymentId, BigDecimal amount) {
+    try {
+      String url = paystackProperties.getApiUrl() + "/refund";
+
+      HttpHeaders headers = new HttpHeaders();
+      headers.setBearerAuth(paystackProperties.getSecretKey());
       headers.setContentType(MediaType.APPLICATION_JSON);
 
       Map<String, Object> requestBody = new HashMap<>();

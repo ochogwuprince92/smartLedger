@@ -2,7 +2,13 @@ package com.finance.smartLedger.journal.domain;
 
 import com.finance.smartLedger.shared.entity.AuditableEntity;
 import com.finance.smartLedger.shared.valueobject.Money;
-import jakarta.persistence.*;
+import jakarta.persistence.AttributeOverride;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.Table;
 import java.util.UUID;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -35,7 +41,10 @@ public class JournalLineItem extends AuditableEntity {
   @Column(name = "debit_credit", nullable = false, length = 10)
   private DebitCredit debitCredit;
 
-  @Embedded private Money amount;
+  @Embedded
+  @AttributeOverride(name = "amount", column = @Column(name = "amount_amount"))
+  @AttributeOverride(name = "currencyCode", column = @Column(name = "amount_currency_code"))
+  private Money amount;
 
   @Column(name = "description", length = 255)
   private String description;

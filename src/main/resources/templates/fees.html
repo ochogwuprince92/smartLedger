@@ -1,44 +1,18 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fee Management - SmartLedger</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
-        <div class="container-fluid">
-            <a class="navbar-brand" th:href="@{/dashboard}">
-                <i class="fas fa-chart-line me-2"></i>SmartLedger
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/dashboard}">Dashboard</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" th:href="@{/fees}">Fee Management</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/payments}">Payments</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" th:href="@{/ledger}">Ledger</a>
-                    </li>
-                </ul>
-            </div>
-        </div>
-    </nav>
-
+    <div th:replace="~{fragments/layout :: navbar('fees')}"></div>
     <div class="container py-4">
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h1 class="h2 fw-bold">Fee Management</h1>
-            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFeeModal">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createFeeModal" sec:authorize="hasAuthority('FEE:CREATE')">
                 <i class="fas fa-plus me-2"></i>Create Fee Invoice
             </button>
         </div>
@@ -161,8 +135,27 @@
         </div>
     </div>
 
+    <div th:replace="~{fragments/layout :: scripts}"></div>
+
+    <!-- Loading and Error States -->
+    <div id="loadingState" class="d-none">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <p class="mt-3 text-muted">Loading fee data...</p>
+        </div>
+    </div>
+
+    <div id="errorState" class="d-none">
+        <div class="alert alert-danger" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <span id="errorMessage">An error occurred while loading data.</span>
+        </div>
+    </div>
+
     <!-- Create Fee Modal -->
-    <div class="modal fade" id="createFeeModal" tabindex="-1">
+    <div class="modal fade" id="createFeeModal" tabindex="-1" sec:authorize="hasAuthority('FEE:CREATE')">
         <div class="modal-dialog modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
@@ -170,45 +163,402 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
-                    <form>
+                    <form id="createInvoiceForm">
                         <div class="row">
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Student ID</label>
-                                <input type="text" class="form-control" placeholder="Enter student ID (UUID)">
+                                <input type="text" class="form-control" id="studentId" placeholder="Enter student ID (UUID)" required>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Fee Schedule</label>
-                                <select class="form-select">
-                                    <option value="">Select Schedule</option>
-                                    <option>Tuition Fee - Term 1</option>
-                                    <option>Tuition Fee - Term 2</option>
-                                </select>
+                                <label class="form-label">Academic Year</label>
+                                <input type="text" class="form-control" id="academicYear" placeholder="2024-2025" required>
                             </div>
                         </div>
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Amount</label>
-                                <input type="number" class="form-control" placeholder="0.00">
+                                <label class="form-label">Academic Term</label>
+                                <select class="form-select" id="academicTerm" required>
+                                    <option value="">Select Term</option>
+                                    <option value="Term 1">Term 1</option>
+                                    <option value="Term 2">Term 2</option>
+                                    <option value="Term 3">Term 3</option>
+                                </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Due Date</label>
-                                <input type="date" class="form-control">
+                                <label class="form-label">Class Grade</label>
+                                <input type="text" class="form-control" id="classGrade" placeholder="Grade 10" required>
                             </div>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">Description</label>
-                            <textarea class="form-control" rows="3" placeholder="Enter description..."></textarea>
+                            <label class="form-label">Due Date</label>
+                            <input type="date" class="form-control" id="dueDate" required>
                         </div>
                     </form>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary">Create Invoice</button>
+                    <button type="button" class="btn btn-primary" onclick="createInvoice()">Create Invoice</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Add Line Item Modal -->
+    <div class="modal fade" id="lineItemModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Add Line Item</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="lineItemForm">
+                        <input type="hidden" id="lineItemInvoiceId">
+                        <div class="mb-3">
+                            <label class="form-label">Fee Type</label>
+                            <select class="form-select" id="feeType" required>
+                                <option value="">Select Fee Type</option>
+                                <option value="TUITION">Tuition</option>
+                                <option value="REGISTRATION">Registration</option>
+                                <option value="EXAMINATION">Examination</option>
+                                <option value="LIBRARY">Library</option>
+                                <option value="LABORATORY">Laboratory</option>
+                                <option value="SPORTS">Sports</option>
+                                <option value="TRANSPORTATION">Transportation</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount</label>
+                                <input type="number" class="form-control" id="lineItemAmount" step="0.01" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Currency</label>
+                                <select class="form-select" id="lineItemCurrency">
+                                    <option value="USD">USD</option>
+                                    <option value="NGN">NGN</option>
+                                    <option value="GBP">GBP</option>
+                                    <option value="EUR">EUR</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="lineItemDescription" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="addLineItem()">Add Item</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Record Payment Modal -->
+    <div class="modal fade" id="paymentModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Record Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="paymentForm">
+                        <input type="hidden" id="paymentInvoiceId">
+                        <div class="mb-3">
+                            <label class="form-label">Fee Type</label>
+                            <select class="form-select" id="paymentFeeType" required>
+                                <option value="">Select Fee Type</option>
+                                <option value="TUITION">Tuition</option>
+                                <option value="REGISTRATION">Registration</option>
+                                <option value="EXAMINATION">Examination</option>
+                                <option value="LIBRARY">Library</option>
+                                <option value="OTHER">Other</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Amount</label>
+                                <input type="number" class="form-control" id="paymentAmount" step="0.01" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Currency</label>
+                                <select class="form-select" id="paymentCurrency">
+                                    <option value="USD">USD</option>
+                                    <option value="NGN">NGN</option>
+                                    <option value="GBP">GBP</option>
+                                    <option value="EUR">EUR</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payment Method</label>
+                            <select class="form-select" id="paymentMethod" required>
+                                <option value="CASH">Cash</option>
+                                <option value="BANK_TRANSFER">Bank Transfer</option>
+                                <option value="CARD">Card</option>
+                                <option value="PAYSTACK">Paystack</option>
+                                <option value="CHECK">Check</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Reference Number</label>
+                            <input type="text" class="form-control" id="referenceNumber">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="recordPayment()">Record Payment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = '/api/fees';
+        let currentInvoiceId = null;
+
+        // Show loading state
+        function showLoading() {
+            document.getElementById('loadingState').classList.remove('d-none');
+            document.getElementById('errorState').classList.add('d-none');
+        }
+
+        // Hide loading state
+        function hideLoading() {
+            document.getElementById('loadingState').classList.add('d-none');
+        }
+
+        // Show error state
+        function showError(message) {
+            document.getElementById('loadingState').classList.add('d-none');
+            document.getElementById('errorState').classList.remove('d-none');
+            document.getElementById('errorMessage').textContent = message;
+        }
+
+        // Hide error state
+        function hideError() {
+            document.getElementById('errorState').classList.add('d-none');
+        }
+
+        // Show success message
+        function showSuccessMessage(message) {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'alert alert-success alert-dismissible fade show';
+            alertDiv.innerHTML = `
+                <i class="fas fa-check-circle me-2"></i>${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            `;
+            document.querySelector('.container').prepend(alertDiv);
+            setTimeout(() => alertDiv.remove(), 5000);
+        }
+
+        // Load invoices on page load
+        async function loadInvoices() {
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/invoices/unpaid`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    renderInvoices(data.data);
+                    hideLoading();
+                } else {
+                    showError('Failed to load invoices');
+                }
+            } catch (error) {
+                console.error('Error loading invoices:', error);
+                showError('Error loading invoices: ' + error.message);
+            }
+        }
+
+        function renderInvoices(invoices) {
+            const tbody = document.querySelector('.card:nth-child(2) tbody');
+            if (!tbody) return;
+            
+            tbody.innerHTML = invoices.map(invoice => `
+                <tr>
+                    <td>${invoice.invoiceNumber || invoice.id}</td>
+                    <td>${invoice.studentId}</td>
+                    <td>${invoice.classGrade}</td>
+                    <td>${invoice.currencyCode} ${invoice.totalAmount}</td>
+                    <td>${new Date(invoice.dueDate).toLocaleDateString()}</td>
+                    <td><span class="badge ${getInvoiceStatusBadge(invoice.status)}">${invoice.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-success me-1" onclick="showPaymentModal('${invoice.id}', ${invoice.totalAmount}, '${invoice.currencyCode}')">
+                            <i class="fas fa-credit-card"></i> Pay
+                        </button>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="showLineItemModal('${invoice.id}')">
+                            <i class="fas fa-plus"></i> Add Item
+                        </button>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="viewInvoice('${invoice.id}')">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getInvoiceStatusBadge(status) {
+            switch(status) {
+                case 'PAID': return 'bg-success';
+                case 'ISSUED': return 'bg-primary';
+                case 'DRAFT': return 'bg-secondary';
+                case 'CANCELLED': return 'bg-danger';
+                default: return 'bg-warning';
+            }
+        }
+
+        // Create invoice
+        async function createInvoice() {
+            const invoice = {
+                studentId: document.getElementById('studentId').value,
+                academicYear: document.getElementById('academicYear').value,
+                academicTerm: document.getElementById('academicTerm').value,
+                classGrade: document.getElementById('classGrade').value,
+                dueDate: document.getElementById('dueDate').value
+            };
+
+            // Validation
+            if (!invoice.studentId || !invoice.academicYear || !invoice.academicTerm || !invoice.classGrade || !invoice.dueDate) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/invoices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(invoice)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('createFeeModal')).hide();
+                    document.getElementById('createInvoiceForm').reset();
+                    loadInvoices();
+                    showSuccessMessage('Invoice created successfully');
+                } else {
+                    showError('Failed to create invoice: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error creating invoice:', error);
+                showError('Error creating invoice: ' + error.message);
+            }
+        }
+
+        // Show line item modal
+        function showLineItemModal(invoiceId) {
+            currentInvoiceId = invoiceId;
+            document.getElementById('lineItemInvoiceId').value = invoiceId;
+            document.getElementById('lineItemForm').reset();
+            new bootstrap.Modal(document.getElementById('lineItemModal')).show();
+        }
+
+        // Add line item to invoice
+        async function addLineItem() {
+            const lineItem = {
+                feeType: document.getElementById('feeType').value,
+                amount: parseFloat(document.getElementById('lineItemAmount').value),
+                currencyCode: document.getElementById('lineItemCurrency').value,
+                description: document.getElementById('lineItemDescription').value
+            };
+
+            if (!lineItem.feeType || !lineItem.amount) {
+                alert('Please fill in fee type and amount');
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/invoices/${currentInvoiceId}/items`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(lineItem)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('lineItemModal')).hide();
+                    document.getElementById('lineItemForm').reset();
+                    loadInvoices();
+                    showSuccessMessage('Line item added successfully');
+                } else {
+                    showError('Failed to add line item: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error adding line item:', error);
+                showError('Error adding line item: ' + error.message);
+            }
+        }
+
+        // Show payment modal
+        function showPaymentModal(invoiceId, outstandingAmount, currency) {
+            currentInvoiceId = invoiceId;
+            document.getElementById('paymentInvoiceId').value = invoiceId;
+            document.getElementById('paymentForm').reset();
+            document.getElementById('paymentCurrency').value = currency || 'USD';
+            new bootstrap.Modal(document.getElementById('paymentModal')).show();
+        }
+
+        // Record payment
+        async function recordPayment() {
+            const payment = {
+                feeType: document.getElementById('paymentFeeType').value,
+                amount: parseFloat(document.getElementById('paymentAmount').value),
+                currencyCode: document.getElementById('paymentCurrency').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                referenceNumber: document.getElementById('referenceNumber').value
+            };
+
+            if (!payment.feeType || !payment.amount || !payment.paymentMethod) {
+                alert('Please fill in fee type, amount, and payment method');
+                return;
+            }
+
+            showLoading();
+            try {
+                const response = await fetch(`${API_BASE}/invoices/${currentInvoiceId}/payments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payment)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    bootstrap.Modal.getInstance(document.getElementById('paymentModal')).hide();
+                    document.getElementById('paymentForm').reset();
+                    loadInvoices();
+                    showSuccessMessage('Payment recorded successfully');
+                } else {
+                    // Handle overpayment error specifically
+                    if (response.status === 400 && data.message && data.message.includes('exceeds')) {
+                        showError('Payment exceeds outstanding balance. Please enter a smaller amount.');
+                    } else {
+                        showError('Failed to record payment: ' + (data.message || 'Unknown error'));
+                    }
+                }
+            } catch (error) {
+                console.error('Error recording payment:', error);
+                showError('Error recording payment: ' + error.message);
+            }
+        }
+
+        // View invoice details
+        function viewInvoice(invoiceId) {
+            window.location.href = `${API_BASE}/invoices/${invoiceId}`;
+        }
+
+        // Load invoices on page load
+        document.addEventListener('DOMContentLoaded', loadInvoices);
+    </script>
 </body>
 </html>

@@ -1,5 +1,6 @@
 package com.finance.smartLedger.security.presentation;
 
+import com.finance.smartLedger.security.application.dto.AdminPasswordResetResponse;
 import com.finance.smartLedger.security.application.dto.UserRequest;
 import com.finance.smartLedger.security.application.dto.UserResponse;
 import com.finance.smartLedger.security.service.UserService;
@@ -58,6 +59,16 @@ public class UserController {
     var user = userService.updatePassword(id, request.oldPassword(), request.newPassword());
     return ResponseEntity.ok(
         ApiResponse.success("Password updated successfully", UserResponse.from(user)));
+  }
+
+  @PostMapping("/{id}/reset-password")
+  @PreAuthorize("hasAuthority('USER:RESET_PASSWORD')")
+  public ResponseEntity<ApiResponse<AdminPasswordResetResponse>> resetPassword(
+      @PathVariable UUID id) {
+    var tempPassword = userService.adminResetPassword(id);
+    var response = new AdminPasswordResetResponse(id, tempPassword);
+    return ResponseEntity.ok(
+        ApiResponse.success("Password reset successfully. Temporary password provided for one-time relay to user.", response));
   }
 
   @PatchMapping("/{id}/enable")

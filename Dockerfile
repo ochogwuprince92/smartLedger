@@ -16,5 +16,10 @@ COPY --from=build /app/target/*.jar app.jar
 RUN addgroup -S spring && adduser -S spring -G spring
 USER spring:spring
 
-EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "/app/app.jar"]
+# Render uses port 10000 by default for web services
+EXPOSE 10000
+
+# Set Java options for Render environment
+ENV JAVA_OPTS="-Xmx512m -Xms256m -Dserver.port=10000"
+
+ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -jar /app/app.jar"]

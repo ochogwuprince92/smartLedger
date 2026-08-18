@@ -139,6 +139,30 @@ public class JournalController {
     return ResponseEntity.ok(ApiResponse.success(responses));
   }
 
+  @GetMapping("/transactions")
+  @Operation(
+      summary = "List transactions by account",
+      description = "Lists all journal entries/transactions for a specific account")
+  @PreAuthorize("hasAuthority('JOURNAL:READ')")
+  public ResponseEntity<ApiResponse<List<JournalEntryResponse>>> listTransactionsByAccount(
+      @Parameter(description = "Account ID") @RequestParam UUID accountId,
+      @Parameter(description = "Filter by start date") @RequestParam(required = false)
+          LocalDateTime startDate,
+      @Parameter(description = "Filter by end date") @RequestParam(required = false)
+          LocalDateTime endDate) {
+    List<JournalEntry> entries;
+    
+    if (startDate != null && endDate != null) {
+      entries = journalEntryService.findByAccountIdAndDateBetween(accountId, startDate, endDate);
+    } else {
+      entries = journalEntryService.findByAccountId(accountId);
+    }
+
+    List<JournalEntryResponse> responses =
+        entries.stream().map(JournalEntryResponse::from).collect(Collectors.toList());
+    return ResponseEntity.ok(ApiResponse.success(responses));
+  }
+
   @DeleteMapping("/entries/{id}")
   @Operation(summary = "Delete journal entry", description = "Deletes an unposted journal entry")
   @PreAuthorize("hasAuthority('JOURNAL:DELETE')")

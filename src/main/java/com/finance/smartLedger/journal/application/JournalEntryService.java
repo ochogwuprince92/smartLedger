@@ -151,6 +151,14 @@ public class JournalEntryService {
     return journalEntryRepository.findPostedEntriesOrderByDateDesc();
   }
 
+  public List<JournalEntry> findByAccountId(UUID accountId) {
+    return journalEntryRepository.findByAccountId(accountId);
+  }
+
+  public List<JournalEntry> findByAccountIdAndDateBetween(UUID accountId, LocalDateTime startDate, LocalDateTime endDate) {
+    return journalEntryRepository.findByAccountIdAndEntryDateBetween(accountId, startDate, endDate);
+  }
+
   @Transactional
   public void deleteJournalEntry(UUID id) {
     JournalEntry journalEntry =

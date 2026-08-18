@@ -179,6 +179,73 @@ The application will start on port 8080.
 - **API Documentation**: http://localhost:8080/swagger-ui.html
 - **Actuator**: http://localhost:8080/actuator
 
+### 7. Email Configuration (Local Development)
+
+To enable email functionality in local development, you need to configure Gmail SMTP settings with an App Password:
+
+#### Step 1: Enable 2FA on your Google Account
+1. Go to https://myaccount.google.com/security
+2. Enable Two-Factor Authentication (2FA)
+
+#### Step 2: Generate an App Password
+1. Go to https://myaccount.google.com/apppasswords
+2. Select "Mail" and "Other (Custom name)"
+3. Enter "SmartLedger Local Dev" as the name
+4. Google will generate a 16-character password like: `abcd efgh ijkl mnop`
+
+#### Step 3: Create application-local.yml
+Create `src/main/resources/application-local.yml` (git-ignored):
+
+```yaml
+spring:
+  profiles:
+    active: local
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${MAIL_USERNAME:your-gmail-address@gmail.com}
+    password: ${MAIL_PASSWORD:your-gmail-app-password}
+    protocol: smtp
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+            required: true
+
+app:
+  email:
+    enabled: true
+    from: ${MAIL_USERNAME:your-gmail-address@gmail.com}
+    from-name: SmartLedger Local Dev
+```
+
+#### Step 4: Set Environment Variables
+**Windows PowerShell:**
+```powershell
+$env:MAIL_USERNAME="your-email@gmail.com"
+$env:MAIL_PASSWORD="abcdefghijklmnop"  # 16-char app password, no spaces
+```
+
+**Linux/Mac:**
+```bash
+export MAIL_USERNAME="your-email@gmail.com"
+export MAIL_PASSWORD="abcdefghijklmnop"  # 16-char app password, no spaces
+```
+
+#### Step 5: Run with Local Profile
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+```
+
+**IMPORTANT NOTES:**
+- Use the 16-character App Password, NOT your regular Gmail password
+- Google removed "less secure app access" - regular passwords will fail
+- Remove spaces from the app password when setting environment variables
+- Email is disabled by default in base configuration (`app.email.enabled: false`)
+
 ## Docker Deployment
 
 ### Using Docker Compose

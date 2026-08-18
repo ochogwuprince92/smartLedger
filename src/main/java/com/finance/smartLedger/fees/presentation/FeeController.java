@@ -6,6 +6,9 @@ import com.finance.smartLedger.fees.domain.FeeInvoice;
 import com.finance.smartLedger.fees.domain.FeePayment;
 import com.finance.smartLedger.fees.domain.FeeSchedule;
 import com.finance.smartLedger.fees.domain.FeeType;
+import com.finance.smartLedger.payment.application.PaymentService;
+import com.finance.smartLedger.payment.application.dto.PaymentResponse;
+import com.finance.smartLedger.payment.domain.Payment;
 import com.finance.smartLedger.shared.dto.ApiResponse;
 import com.finance.smartLedger.shared.valueobject.Money;
 import io.swagger.v3.oas.annotations.Operation;
@@ -29,6 +32,7 @@ public class FeeController {
 
   private final FeeScheduleService feeScheduleService;
   private final FeeInvoiceService feeInvoiceService;
+  private final PaymentService paymentService;
 
   // ==================== Fee Schedule Endpoints ====================
 
@@ -386,6 +390,27 @@ public class FeeController {
     return ResponseEntity.ok(ApiResponse.success(payments));
   }
 
+  @PostMapping("/invoices/{invoiceId}/pay-with-gateway")
+  @Operation(
+      summary = "Pay invoice with gateway",
+      description = "Initiates payment for a fee invoice using payment gateway and returns authorization URL for redirect")
+  @PreAuthorize("hasAuthority('FEE:UPDATE')")
+  public ResponseEntity<ApiResponse<PaymentResponse>> payWithGateway(
+      @PathVariable UUID invoiceId,
+      @RequestBody @Valid PayWithGatewayRequest request) {
+    Payment payment = paymentService.initiateFeePayment(
+        invoiceId,
+        request.payerEmail(),
+        request.payerName(),
+        request.payerPhone(),
+        request.callbackUrl(),
+        "api");
+
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(ApiResponse.success("Payment initiated successfully. Redirect to authorizationUrl to complete payment.", 
+            PaymentResponse.from(payment)));
+  }
+
   // ==================== Request DTOs ====================
 
   record CreateFeeScheduleRequest(
@@ -441,4 +466,10 @@ public class FeeController {
       String referenceNumber) {}
 
   record CompletePaymentRequest(String receiptNumber) {}
+
+  record PayWithGatewayRequest(
+      String payerEmail,
+      String payerName,
+      String payerPhone,
+      String callbackUrl) {}
 }

@@ -160,7 +160,10 @@ public class NotificationService {
     }
 
     notification.markForRetry();
-    return notificationRepository.save(notification);
+    notificationRepository.save(notification);
+
+    // Actually attempt to resend after marking for retry
+    return sendNotification(notificationId);
   }
 
   @Transactional
@@ -185,8 +188,12 @@ public class NotificationService {
 
     scheduledNotifications.forEach(
         notification -> {
-          notification.markAsSent();
-          notificationRepository.save(notification);
+          try {
+            sendNotification(notification.getId());
+          } catch (Exception e) {
+            // Log error but continue processing other notifications
+            System.err.println("Failed to send scheduled notification: " + notification.getId());
+          }
         });
 
     return scheduledNotifications;

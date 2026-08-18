@@ -1,14 +1,20 @@
 pipeline {
     agent any
-    
+
     environment {
         DOCKER_REGISTRY = credentials('docker-registry')
         DOCKER_CREDENTIALS_ID = 'docker-credentials'
-        SPRING_DATASOURCE_URL = 'jdbc:postgresql://localhost:5432/smartledger_test'
-        SPRING_DATASOURCE_USERNAME = 'test'
-        SPRING_DATASOURCE_PASSWORD = 'test'
-        SPRING_REDIS_HOST = 'localhost'
-        SPRING_REDIS_PORT = '6379'
+        POSTGRES_DB = credentials('postgres-db')
+        POSTGRES_USER = credentials('postgres-user')
+        POSTGRES_PASSWORD = credentials('postgres-password')
+        REDIS_HOST = credentials('redis-host')
+        REDIS_PORT = credentials('redis-port')
+        REDIS_PASSWORD = credentials('redis-password')
+        JWT_SECRET = credentials('jwt-secret')
+        JWT_EXPIRATION = credentials('jwt-expiration')
+        ADMIN_EMAIL = credentials('admin-email')
+        ADMIN_PASSWORD = credentials('admin-password')
+        NOTIFICATION_EMAIL = credentials('notification-email')
     }
     
     tools {
@@ -134,8 +140,27 @@ pipeline {
                 submitter 'admin'
             }
             steps {
-                echo 'Deploying to production environment...'
-                sh 'docker-compose -f docker-compose.prod.yml up -d'
+                echo 'Deploying to production environment on Render...'
+                script {
+                    // Deploy to Render using render CLI or API
+                    // Option 1: Using Render CLI (requires render-cli installed)
+                    // sh 'render blueprint apply --confirm'
+
+                    // Option 2: Using Render API (requires RENDER_API_TOKEN)
+                    // withCredentials([string(credentialsId: 'render-api-token', variable: 'RENDER_TOKEN')]) {
+                    //     sh '''
+                    //         curl -X POST \
+                    //         https://api.render.com/v1/services/YOUR_SERVICE_ID/deploys \
+                    //         -H "Authorization: Bearer $RENDER_TOKEN" \
+                    //         -H "Content-Type: application/json"
+                    //     '''
+                    // }
+
+                    // Option 3: Trigger GitHub webhook to Render (simplest)
+                    // Just push to main branch and Render auto-deploys
+                    echo 'Render will auto-deploy on push to main branch'
+                    echo 'Manual deployment can be triggered via Render dashboard'
+                }
             }
         }
     }

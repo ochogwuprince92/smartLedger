@@ -39,4 +39,13 @@ public interface JournalEntryRepository
   @Query(
       "SELECT je FROM JournalEntry je WHERE je.posted = true ORDER BY je.entryDate DESC, je.entryNumber DESC")
   List<JournalEntry> findPostedEntriesOrderByDateDesc();
+
+  @Query("SELECT DISTINCT je FROM JournalEntry je JOIN je.lineItems li WHERE li.accountId = :accountId")
+  List<JournalEntry> findByAccountId(@Param("accountId") UUID accountId);
+
+  @Query("SELECT DISTINCT je FROM JournalEntry je JOIN je.lineItems li WHERE li.accountId = :accountId AND je.entryDate BETWEEN :startDate AND :endDate")
+  List<JournalEntry> findByAccountIdAndEntryDateBetween(
+      @Param("accountId") UUID accountId,
+      @Param("startDate") LocalDateTime startDate,
+      @Param("endDate") LocalDateTime endDate);
 }

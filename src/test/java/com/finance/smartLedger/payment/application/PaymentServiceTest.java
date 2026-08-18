@@ -7,8 +7,12 @@ import static org.mockito.Mockito.*;
 import com.finance.smartLedger.payment.domain.Payment;
 import com.finance.smartLedger.payment.domain.PaymentMethod;
 import com.finance.smartLedger.payment.domain.PaymentStatus;
+import com.finance.smartLedger.payment.infrastructure.external.PaymentGatewayClient;
+import com.finance.smartLedger.payment.infrastructure.external.PaystackInitiationResult;
 import com.finance.smartLedger.payment.infrastructure.persistence.PaymentRepository;
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
@@ -35,6 +39,8 @@ class PaymentServiceTest {
 
   @Mock private com.finance.smartLedger.shared.domain.EventPublisher eventPublisher;
 
+  @Mock private PaymentGatewayClient paymentGatewayClient;
+
   @InjectMocks private PaymentService paymentService;
 
   private static final String PAYMENT_NUMBER = "PAY-2023-001";
@@ -52,14 +58,15 @@ class PaymentServiceTest {
         paymentAccountingService,
         receiptService,
         notificationService,
-        auditService);
+        auditService,
+        paymentGatewayClient);
   }
 
   @Test
   void testCreatePayment_Success() {
     // Given
     LocalDateTime paymentDate = LocalDateTime.now();
-    PaymentMethod paymentMethod = PaymentMethod.PAYSTACK;
+    PaymentMethod paymentMethod = PaymentMethod.BANK_TRANSFER; // Use BANK_TRANSFER to avoid gateway call
     BigDecimal amount = new BigDecimal("100.00");
     String currencyCode = "USD";
     String description = "School fees payment";
@@ -96,6 +103,7 @@ class PaymentServiceTest {
             PAYER_EMAIL,
             PAYER_PHONE,
             description,
+            null,
             CREATED_BY);
 
     // Then
@@ -117,6 +125,205 @@ class PaymentServiceTest {
             eq("Payment created: " + PAYMENT_NUMBER),
             any(String.class),
             eq(CREATED_BY));
+    // Verify gateway was NOT called for BANK_TRANSFER
+    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void testCreatePayment_WithGateway_CallsGatewayClientExactlyOnce() {
+    // Given
+    LocalDateTime paymentDate = LocalDateTime.now();
+    PaymentMethod paymentMethod = PaymentMethod.PAYSTACK;
+    BigDecimal amount = new BigDecimal("100.00");
+    String currencyCode = "USD";
+    String description = "School fees payment";
+    String callbackUrl = "https://example.com/payment/callback";
+
+    Payment expectedPayment =
+        new Payment(
+            PAYMENT_NUMBER,
+            null,
+            null,
+            paymentDate,
+            paymentMethod,
+            amount,
+            currencyCode,
+            PAYER_NAME,
+            PAYER_EMAIL,
+            description,
+            CREATED_BY);
+    expectedPayment.setPayerPhone(PAYER_PHONE);
+
+    PaystackInitiationResult gatewayResult =
+        new PaystackInitiationResult("REF-12345", "https://paystack.co/checkout/REF-12345", "ACCESS_CODE_12345");
+
+    when(paymentRepository.existsByPaymentNumber(PAYMENT_NUMBER)).thenReturn(false);
+    when(paymentRepository.save(any(Payment.class))).thenReturn(expectedPayment);
+    
+    // Stub gateway client with specific arguments
+    when(paymentGatewayClient.initiatePayment(
+            eq(amount),
+            eq(currencyCode),
+            eq(description),
+            eq(PAYER_EMAIL),
+            eq(PAYER_NAME),
+            any()))
+        .thenReturn(gatewayResult);
+
+    // When
+    Payment result =
+        paymentService.createPayment(
+            PAYMENT_NUMBER,
+            null,
+            null,
+            paymentDate,
+            paymentMethod,
+            amount,
+            currencyCode,
+            PAYER_NAME,
+            PAYER_EMAIL,
+            PAYER_PHONE,
+            description,
+            callbackUrl,
+            CREATED_BY);
+
+    // Then
+    verify(paymentGatewayClient, times(1))
+        .initiatePayment(
+            eq(amount),
+            eq(currencyCode),
+            eq(description),
+            eq(PAYER_EMAIL),
+            eq(PAYER_NAME),
+            any());
+    assertNotNull(result);
+    assertEquals(PAYMENT_NUMBER, result.getPaymentNumber());
+  }
+
+  @Test
+  void testCreatePayment_GatewayFailure_ShouldFailCreation() {
+    // Given
+    LocalDateTime paymentDate = LocalDateTime.now();
+    PaymentMethod paymentMethod = PaymentMethod.PAYSTACK;
+    BigDecimal amount = new BigDecimal("100.00");
+    String currencyCode = "USD";
+    String description = "School fees payment";
+    String callbackUrl = "https://example.com/payment/callback";
+
+    when(paymentRepository.existsByPaymentNumber(PAYMENT_NUMBER)).thenReturn(false);
+    
+    // Stub gateway client to throw exception
+    when(paymentGatewayClient.initiatePayment(
+            eq(amount),
+            eq(currencyCode),
+            eq(description),
+            eq(PAYER_EMAIL),
+            eq(PAYER_NAME),
+            any()))
+        .thenThrow(new RuntimeException("Gateway unreachable"));
+
+    // When & Then
+    RuntimeException exception =
+        assertThrows(
+            RuntimeException.class,
+            () ->
+                paymentService.createPayment(
+                    PAYMENT_NUMBER,
+                    null,
+                    null,
+                    paymentDate,
+                    paymentMethod,
+                    amount,
+                    currencyCode,
+                    PAYER_NAME,
+                    PAYER_EMAIL,
+                    PAYER_PHONE,
+                    description,
+                    callbackUrl,
+                    CREATED_BY));
+
+    assertTrue(exception.getMessage().contains("Failed to initiate payment with gateway"));
+    verify(paymentGatewayClient, times(1))
+        .initiatePayment(
+            eq(amount),
+            eq(currencyCode),
+            eq(description),
+            eq(PAYER_EMAIL),
+            eq(PAYER_NAME),
+            any());
+    // Verify payment was NOT saved when gateway failed
+    verify(paymentRepository, never()).save(any(Payment.class));
+  }
+
+  @Test
+  void testCreatePayment_IdempotencyReplay_ShouldNotRecallGateway() {
+    // Given
+    String idempotencyKey = "test-key-123";
+    LocalDateTime paymentDate = LocalDateTime.now();
+    PaymentMethod paymentMethod = PaymentMethod.PAYSTACK;
+    BigDecimal amount = new BigDecimal("100.00");
+    String currencyCode = "USD";
+    String description = "School fees payment";
+    String callbackUrl = "https://example.com/payment/callback";
+
+    Payment existingPayment =
+        new Payment(
+            PAYMENT_NUMBER,
+            idempotencyKey,
+            null,
+            paymentDate,
+            paymentMethod,
+            amount,
+            currencyCode,
+            PAYER_NAME,
+            PAYER_EMAIL,
+            description,
+            CREATED_BY);
+    existingPayment.setPayerPhone(PAYER_PHONE);
+    existingPayment.setAuthorizationUrl("https://paystack.co/checkout/REF-12345");
+    existingPayment.setCallbackUrl(callbackUrl);
+
+    when(paymentRepository.existsByPaymentNumber(PAYMENT_NUMBER)).thenReturn(false);
+    when(paymentRepository.existsByIdempotencyKey(idempotencyKey)).thenReturn(true);
+    when(paymentRepository.findByIdempotencyKey(idempotencyKey))
+        .thenReturn(Optional.of(existingPayment));
+
+    // When - replay with same idempotency key
+    Payment result =
+        paymentService.createPayment(
+            PAYMENT_NUMBER,
+            idempotencyKey,
+            null,
+            paymentDate,
+            paymentMethod,
+            amount,
+            currencyCode,
+            PAYER_NAME,
+            PAYER_EMAIL,
+            PAYER_PHONE,
+            description,
+            callbackUrl,
+            CREATED_BY);
+
+    // Then - This test will FAIL because current implementation doesn't call gateway at all
+    // But once implemented, it should verify gateway is NOT called on replay
+    assertNotNull(result);
+    assertEquals(PAYMENT_NUMBER, result.getPaymentNumber());
+    assertEquals(idempotencyKey, result.getIdempotencyKey());
+    assertEquals("https://paystack.co/checkout/REF-12345", result.getAuthorizationUrl());
+    assertEquals(callbackUrl, result.getCallbackUrl());
+    
+    // Verify gateway was NOT called on replay (idempotency)
+    verify(paymentGatewayClient, never())
+        .initiatePayment(
+            any(BigDecimal.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(String.class),
+            any(Map.class));
+    // Verify existing payment was returned, not saved again
+    verify(paymentRepository, never()).save(any(Payment.class));
   }
 
   @Test
@@ -141,6 +348,7 @@ class PaymentServiceTest {
                     PAYER_EMAIL,
                     PAYER_PHONE,
                     "Test payment",
+                    null,
                     CREATED_BY));
 
     assertEquals(
@@ -624,6 +832,7 @@ class PaymentServiceTest {
             PAYER_EMAIL,
             PAYER_PHONE,
             description,
+            null,
             CREATED_BY);
 
     // Then
@@ -646,5 +855,7 @@ class PaymentServiceTest {
             eq("Payment created: " + PAYMENT_NUMBER),
             any(String.class),
             eq(CREATED_BY));
+    // Verify gateway was NOT called for BANK_TRANSFER
+    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any());
   }
 }

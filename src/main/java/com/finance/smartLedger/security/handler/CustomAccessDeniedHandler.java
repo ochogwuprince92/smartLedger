@@ -22,18 +22,28 @@ public class CustomAccessDeniedHandler implements AccessDeniedHandler {
       AccessDeniedException accessDeniedException)
       throws IOException, ServletException {
 
-    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
-    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+    // Check if the request is for a web page (HTML) or API (JSON)
+    String acceptHeader = request.getHeader("Accept");
+    boolean isWebRequest = acceptHeader != null && acceptHeader.contains("text/html");
 
-    ProblemDetail problemDetail =
-        ProblemDetail.of(
-            HttpServletResponse.SC_FORBIDDEN,
-            "Forbidden",
-            accessDeniedException.getMessage(),
-            "AUTH-002",
-            request.getRequestURI(),
-            LocalDateTime.now());
+    if (isWebRequest) {
+      // For web pages, redirect to dashboard with error message
+      response.sendRedirect("/dashboard?error=access_denied");
+    } else {
+      // For API requests, return JSON error
+      response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+      response.setContentType(MediaType.APPLICATION_JSON_VALUE);
 
-    new ObjectMapper().writeValue(response.getOutputStream(), problemDetail);
+      ProblemDetail problemDetail =
+          ProblemDetail.of(
+              HttpServletResponse.SC_FORBIDDEN,
+              "Forbidden",
+              accessDeniedException.getMessage(),
+              "AUTH-002",
+              request.getRequestURI(),
+              LocalDateTime.now());
+
+      new ObjectMapper().writeValue(response.getOutputStream(), problemDetail);
+    }
   }
 }

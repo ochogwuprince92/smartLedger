@@ -4,6 +4,7 @@ import com.finance.smartLedger.security.domain.User;
 import com.finance.smartLedger.security.infrastructure.persistence.UserRepository;
 import com.finance.smartLedger.shared.exception.BusinessException;
 import com.finance.smartLedger.shared.exception.ErrorCodes;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
@@ -58,11 +59,42 @@ public class UserService {
   @CacheEvict(value = "users", key = "#userId")
   public User updatePassword(UUID userId, String oldPassword, String newPassword) {
     User user = getUserById(userId);
+    
+    if (Boolean.TRUE.equals(user.getMustChangePassword())) {
+      user.setPassword(passwordEncoder.encode(newPassword));
+      user.setMustChangePassword(false);
+      return userRepository.save(user);
+    }
+    
     if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
       throw new BusinessException(ErrorCodes.BAD_REQUEST, "Current password is incorrect");
     }
     user.setPassword(passwordEncoder.encode(newPassword));
     return userRepository.save(user);
+  }
+
+  @CacheEvict(value = "users", key = "#userId")
+  public String adminResetPassword(UUID userId) {
+    User user = getUserById(userId);
+    
+    String tempPassword = generateSecureRandomPassword();
+    user.setPassword(passwordEncoder.encode(tempPassword));
+    user.setMustChangePassword(true);
+    userRepository.save(user);
+    
+    return tempPassword;
+  }
+
+  private String generateSecureRandomPassword() {
+    String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*";
+    SecureRandom random = new SecureRandom();
+    StringBuilder password = new StringBuilder();
+    
+    for (int i = 0; i < 16; i++) {
+      password.append(chars.charAt(random.nextInt(chars.length())));
+    }
+    
+    return password.toString();
   }
 
   @CacheEvict(value = "users", key = "#userId")

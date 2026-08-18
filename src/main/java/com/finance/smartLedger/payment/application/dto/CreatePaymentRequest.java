@@ -23,4 +23,6 @@ public record CreatePaymentRequest(
     @Schema(description = "Payer email", example = "john@example.com") String payerEmail,
     @Schema(description = "Payer phone", example = "+1234567890") String payerPhone,
     @Schema(description = "Description", example = "Payment for invoice #123")
-        String description) {}
+        String description,
+    @Schema(description = "Callback URL for payment gateway redirect", example = "https://example.com/payment/callback")
+        String callbackUrl) {}

@@ -33,12 +33,13 @@ services:
           type: pserv
           name: smartledger-db
           envVar: POSTGRES_PASSWORD
-      - key: REDIS_HOST
-        value: your-redis-cloud-host.com  # Replace with Redis Cloud/Upstash host
-      - key: REDIS_PORT
-        value: 6379
-      - key: REDIS_PASSWORD
-        value: your-redis-password  # Replace with Redis Cloud/Upstash password
+      # Redis - Set these in Render dashboard after deployment
+      # - key: REDIS_HOST
+      #   value: your-redis-cloud-host.com
+      # - key: REDIS_PORT
+      #   value: 6379
+      # - key: REDIS_PASSWORD
+      #   value: your-redis-password
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION
@@ -49,19 +50,21 @@ services:
         generateValue: true
       - key: APP_BASE_URL
         value: https://smartledger-app.onrender.com
-      - key: N8N_BASE_URL
-        value: https://your-n8n-instance.com  # Replace with your n8n instance
+      # n8n - Set these in Render dashboard after deployment
+      # - key: N8N_BASE_URL
+      #   value: https://your-n8n-instance.com
       - key: N8N_WEBHOOK_PATH
         value: /webhook/finance-ai-insight
       - key: N8N_CALLBACK_SECRET
         generateValue: true
-      - key: MAIL_HOST
-        value: smtp.gmail.com
-      - key: MAIL_PORT
-        value: 587
-      - key: MAIL_USERNAME
-        value: ochogwuprince@gmail.com  # Replace with your email
-      - key: MAIL_PASSWORD
-        value: your-app-password  # Replace with app password
+      # Mail - Set these in Render dashboard after deployment
+      # - key: MAIL_HOST
+      #   value: smtp.gmail.com
+      # - key: MAIL_PORT
+      #   value: 587
+      # - key: MAIL_USERNAME
+      #   value: your-email@gmail.com
+      # - key: MAIL_PASSWORD
+      #   value: your-app-password
       - key: APP_EMAIL_ENABLED
-        value: true
+        value: false

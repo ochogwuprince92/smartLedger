@@ -1,34 +1,38 @@
 spring:
   datasource:
-    url: ${DATASOURCE_URL}
+    url: ${DATASOURCE_URL}?sslmode=require
     username: ${DATASOURCE_USERNAME}
     password: ${DATASOURCE_PASSWORD}
     hikari:
-      maximum-pool-size: 10
+      maximum-pool-size: 20
       minimum-idle: 5
-      connection-timeout: 30000
-      idle-timeout: 600000
-      max-lifetime: 1800000
+      connection-timeout: 10000
+      idle-timeout: 300000
+      max-lifetime: 900000
 
   data:
     redis:
       host: ${REDIS_HOST}
       port: ${REDIS_PORT}
       password: ${REDIS_PASSWORD}
-      timeout: 60000ms
+      timeout: 5000ms
       lettuce:
         pool:
-          max-active: 8
-          max-idle: 8
-          min-idle: 0
+          max-active: 10
+          max-idle: 5
+          min-idle: 2
 
   jpa:
     show-sql: false
     properties:
       hibernate:
         format_sql: false
+        jdbc:
+          batch_size: 50
+          order_inserts: true
+          order_updates: true
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
 
   flyway:
     enabled: true

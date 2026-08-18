@@ -3,9 +3,11 @@ package com.finance.smartLedger.shared.exception;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 @Slf4j
@@ -23,8 +25,10 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return problemDetail;
   }
 
-  @ExceptionHandler(MethodArgumentNotValidException.class)
-  public ProblemDetail handleValidationException(MethodArgumentNotValidException ex) {
+  @Override
+  protected ResponseEntity<Object> handleMethodArgumentNotValid(
+      MethodArgumentNotValidException ex, org.springframework.http.HttpHeaders headers,
+      HttpStatus status, WebRequest request) {
     String errorMessage = ex.getBindingResult().getFieldErrors().stream()
         .map(error -> error.getField() + ": " + error.getDefaultMessage())
         .reduce((a, b) -> a + ", " + b)
@@ -33,7 +37,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, errorMessage);
     problemDetail.setTitle("Validation Failed");
     problemDetail.setType(java.net.URI.create("https://api.smartledger.com/errors/ERR-1001"));
-    return problemDetail;
+    return ResponseEntity.of(problemDetail).build();
   }
 
   @ExceptionHandler(Exception.class)

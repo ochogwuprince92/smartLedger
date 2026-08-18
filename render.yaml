@@ -1,20 +1,4 @@
 services:
-  # PostgreSQL Database
-  - type: pserv
-    name: smartledger-db
-    plan: free
-    runtime: docker
-    env: docker
-    image:
-      url: postgres:16-alpine
-    envVars:
-      - key: POSTGRES_DB
-        value: smartledger_db
-      - key: POSTGRES_USER
-        value: postgres
-      - key: POSTGRES_PASSWORD
-        value: change_this_password_in_render_dashboard
-
   # Spring Boot Web Application
   - type: web
     name: smartledger-app
@@ -27,25 +11,13 @@ services:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
       - key: DATASOURCE_URL
-        fromService:
-          type: pserv
-          name: smartledger-db
-          property: host
+        value: jdbc:postgresql://your-database-host:5432/smartledger_db
       - key: DATASOURCE_USERNAME
-        fromService:
-          type: pserv
-          name: smartledger-db
-          envVarKey: POSTGRES_USER
+        value: postgres
       - key: DATASOURCE_PASSWORD
-        fromService:
-          type: pserv
-          name: smartledger-db
-          envVarKey: POSTGRES_PASSWORD
+        value: your_database_password
       - key: POSTGRES_DB
-        fromService:
-          type: pserv
-          name: smartledger-db
-          envVarKey: POSTGRES_DB
+        value: smartledger_db
       # Redis - Set these in Render dashboard after deployment
       # - key: REDIS_HOST
       #   value: your-redis-cloud-host.com

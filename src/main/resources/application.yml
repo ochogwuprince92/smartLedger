@@ -3,7 +3,7 @@ spring:
   application:
     name: smartLedger
   profiles:
-    active: local
+    active: prod
 
   mail:
     host: ${MAIL_HOST:smtp.gmail.com}

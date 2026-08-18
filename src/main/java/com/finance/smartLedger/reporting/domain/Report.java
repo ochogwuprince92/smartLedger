@@ -53,8 +53,7 @@ public class Report extends AuditableEntity {
   @Column(name = "description", length = 500)
   private String description;
 
-  @Lob
-  @Column(name = "report_data")
+  @Column(name = "report_data", columnDefinition = "TEXT")
   private String reportData;
 
   public Report(

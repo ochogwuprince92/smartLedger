@@ -1,5 +1,6 @@
 package com.finance.smartLedger.security.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.finance.smartLedger.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
@@ -70,6 +71,7 @@ public class User extends AuditableEntity {
       name = "user_roles",
       joinColumns = @JoinColumn(name = "user_id"),
       inverseJoinColumns = @JoinColumn(name = "role_id"))
+  @JsonIgnore
   private Set<Role> roles = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
@@ -77,6 +79,7 @@ public class User extends AuditableEntity {
       name = "user_permissions",
       joinColumns = @JoinColumn(name = "user_id"),
       inverseJoinColumns = @JoinColumn(name = "permission_id"))
+  @JsonIgnore
   private Set<Permission> permissions = new HashSet<>();
 
   public User(String username, String email, String password) {

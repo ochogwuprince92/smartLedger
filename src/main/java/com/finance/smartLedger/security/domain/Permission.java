@@ -1,5 +1,6 @@
 package com.finance.smartLedger.security.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.finance.smartLedger.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
 import java.util.HashSet;
@@ -33,9 +34,11 @@ public class Permission extends AuditableEntity {
   private String action;
 
   @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
+  @JsonIgnore
   private Set<Role> roles = new HashSet<>();
 
   @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
+  @JsonIgnore
   private Set<User> users = new HashSet<>();
 
   public Permission(String code, String name) {

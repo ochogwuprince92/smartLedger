@@ -1,5 +1,6 @@
 package com.finance.smartLedger.security.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.finance.smartLedger.shared.entity.AuditableEntity;
 import jakarta.persistence.*;
 import java.util.HashSet;
@@ -34,6 +35,7 @@ public class Role extends AuditableEntity {
       name = "role_permissions",
       joinColumns = @JoinColumn(name = "role_id"),
       inverseJoinColumns = @JoinColumn(name = "permission_id"))
+  @JsonIgnore
   private Set<Permission> permissions = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER)
@@ -41,9 +43,11 @@ public class Role extends AuditableEntity {
       name = "role_hierarchy",
       joinColumns = @JoinColumn(name = "parent_role_id"),
       inverseJoinColumns = @JoinColumn(name = "child_role_id"))
+  @JsonIgnore
   private Set<Role> childRoles = new HashSet<>();
 
   @ManyToMany(fetch = FetchType.EAGER, mappedBy = "childRoles")
+  @JsonIgnore
   private Set<Role> parentRoles = new HashSet<>();
 
   public Role(String code, String name) {

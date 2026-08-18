@@ -20,11 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-    "spring.data.redis.enabled=false",
-    "spring.cache.type=none",
     "app.scheduled.enabled=false",
-    "app.data-loader.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration"
+    "app.data-loader.enabled=false"
 })
 class WebControllerTest {
 

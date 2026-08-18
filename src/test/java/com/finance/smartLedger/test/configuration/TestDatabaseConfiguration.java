@@ -37,10 +37,6 @@ public class TestDatabaseConfiguration {
     registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
     registry.add("spring.flyway.enabled", () -> "true");
     
-    // Disable Redis for tests
-    registry.add("spring.data.redis.enabled", () -> "false");
-    registry.add("spring.cache.type", () -> "none");
-    
     // Disable scheduled tasks for tests
     registry.add("app.scheduled.enabled", () -> "false");
     
@@ -63,10 +59,6 @@ public class TestDatabaseConfiguration {
     registry.add("spring.datasource.driver-class-name", () -> "org.postgresql.Driver");
     registry.add("spring.jpa.hibernate.ddl-auto", () -> "update");
     registry.add("spring.flyway.enabled", () -> "false");
-    
-    // Disable Redis for tests
-    registry.add("spring.data.redis.enabled", () -> "false");
-    registry.add("spring.cache.type", () -> "none");
     
     // Disable scheduled tasks for tests
     registry.add("app.scheduled.enabled", () -> "false");

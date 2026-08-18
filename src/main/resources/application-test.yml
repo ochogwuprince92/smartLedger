@@ -1,0 +1,63 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://smartedger_db_user:fImQES6clm3JHyMnC4aVFCdvTfRsZcec@dpg-da20ketbedkc73d3u2t0-a.oregon-postgres.render.com/smartedger_db
+    username: smartedger_db_user
+    password: fImQES6clm3JHyMnC4aVFCdvTfRsZcec
+    hikari:
+      maximum-pool-size: 10
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+    hibernate:
+      ddl-auto: update
+
+  flyway:
+    enabled: true
+    validate-on-migrate: false
+    baseline-on-migrate: true
+
+server:
+  port: 8081
+
+logging:
+  level:
+    com.finance.smartLedger: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: DEBUG
+
+app:
+  scheduled:
+    enabled: true
+  base-url: https://smartledger-app.onrender.com
+  email:
+    enabled: true
+    from: ochogwuprince@gmail.com
+
+jwt:
+  secret: Y29uZmlkZW50aWFsLXNlY3JldC1rZXktZm9yLWp3dC10b2tlbi1nZW5lcmF0aW9uLXNob3VsZC1iZS1hdC1sZWFzdC0yNTYtYml0cy1sb25nLWZvci1zZWN1cml0eQ==
+  expiration: 86400000
+
+admin:
+  email: admin.smartledger@gmail.com
+  default-password: admin
+
+n8n:
+  webhook-path: /webhook/finance-ai-insight
+  callback-secret: generate-secure-secret-here
+
+payment:
+  gateway:
+    paystack:
+      secret-key: sk_test_d00a8a661d4dec8e0eeae18fac6ccfa331bce99c
+      public-key: pk_test_6a1a73b27bfabc495f2566160f295a1e66c93fd0
+      callback-url: https://dawnlike-solomon-lightfootedly.ngrok-free.dev/api/v1/webhooks/paystack
+      webhook-url: https://dawnlike-solomon-lightfootedly.ngrok-free.dev/api/v1/webhooks/paystack
+      api-url: https://api.paystack.co

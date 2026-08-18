@@ -8,8 +8,6 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -47,7 +45,6 @@ public class UserService {
     return userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public User updateUser(UUID userId, String firstName, String lastName, String phone) {
     User user = getUserById(userId);
     user.setFirstName(firstName);
@@ -56,7 +53,6 @@ public class UserService {
     return userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public User updatePassword(UUID userId, String oldPassword, String newPassword) {
     User user = getUserById(userId);
     
@@ -73,7 +69,6 @@ public class UserService {
     return userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public String adminResetPassword(UUID userId) {
     User user = getUserById(userId);
     
@@ -97,28 +92,24 @@ public class UserService {
     return password.toString();
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public void enableUser(UUID userId) {
     User user = getUserById(userId);
     user.setEnabled(true);
     userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public void disableUser(UUID userId) {
     User user = getUserById(userId);
     user.setEnabled(false);
     userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public void lockUser(UUID userId) {
     User user = getUserById(userId);
     user.setAccountNonLocked(false);
     userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public void unlockUser(UUID userId) {
     User user = getUserById(userId);
     user.setAccountNonLocked(true);
@@ -127,7 +118,6 @@ public class UserService {
     userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public void deleteUser(UUID userId) {
     User user = getUserById(userId);
     user.softDelete();
@@ -135,7 +125,6 @@ public class UserService {
   }
 
   @Transactional(readOnly = true)
-  @Cacheable(value = "users", key = "#userId")
   public User getUserById(UUID userId) {
     return userRepository
         .findById(userId)
@@ -161,7 +150,6 @@ public class UserService {
     return userRepository.findAll();
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public User grantRole(UUID userId, UUID roleId) {
     User user = getUserById(userId);
     var role = roleService.getRoleById(roleId);
@@ -169,7 +157,6 @@ public class UserService {
     return userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public User revokeRole(UUID userId, UUID roleId) {
     User user = getUserById(userId);
     var role = roleService.getRoleById(roleId);
@@ -177,7 +164,6 @@ public class UserService {
     return userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public User grantPermission(UUID userId, UUID permissionId) {
     User user = getUserById(userId);
     var permission = permissionService.getPermissionById(permissionId);
@@ -185,7 +171,6 @@ public class UserService {
     return userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#userId")
   public User revokePermission(UUID userId, UUID permissionId) {
     User user = getUserById(userId);
     var permission = permissionService.getPermissionById(permissionId);
@@ -193,7 +178,6 @@ public class UserService {
     return userRepository.save(user);
   }
 
-  @CacheEvict(value = "users", key = "#username")
   public User recordSuccessfulLogin(String username) {
     User user = getUserByUsername(username);
     user.recordSuccessfulLogin();

@@ -26,8 +26,6 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @ActiveProfiles("test")
 @TestPropertySource(properties = {
-    "spring.data.redis.enabled=false",
-    "spring.cache.type=none",
     "app.scheduled.enabled=false",
     "app.data-loader.enabled=false"
 })

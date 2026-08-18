@@ -20,21 +20,6 @@ services:
     networks:
       - smartledger-network
 
-  redis:
-    image: redis:7-alpine
-    container_name: smartledger-redis
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis-data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - smartledger-network
-
   app:
     build:
       context: .
@@ -50,9 +35,6 @@ services:
       DATASOURCE_URL: jdbc:postgresql://postgres:5432/${POSTGRES_DB}
       DATASOURCE_USERNAME: ${POSTGRES_USER}
       DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD}
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      REDIS_PASSWORD: ${REDIS_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_EXPIRATION: ${JWT_EXPIRATION}
       ADMIN_EMAIL: ${ADMIN_EMAIL}
@@ -60,8 +42,6 @@ services:
       JAVA_OPTS: ${JAVA_OPTS:-}
     depends_on:
       postgres:
-        condition: service_healthy
-      redis:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:5000/actuator/health"]
@@ -78,4 +58,3 @@ networks:
 
 volumes:
   postgres-data:
-  redis-data:

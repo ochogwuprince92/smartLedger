@@ -24,8 +24,6 @@ import org.junit.jupiter.api.Disabled;
 
 @SpringBootTest
 @TestPropertySource(properties = {
-    "spring.data.redis.enabled=false",
-    "spring.cache.type=none",
     "app.scheduled.enabled=false",
     "app.data-loader.enabled=false"
 })

@@ -15,11 +15,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
-    "spring.data.redis.enabled=false",
-    "spring.cache.type=none",
     "app.scheduled.enabled=false",
     "app.data-loader.enabled=false",
-    "spring.autoconfigure.exclude=org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration",
     "spring.jpa.hibernate.ddl-auto=create-drop",
     "spring.flyway.enabled=false",
     "JWT_SECRET=test-secret-key-for-testing-only",

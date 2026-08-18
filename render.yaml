@@ -18,6 +18,7 @@ services:
   # Spring Boot Web Application
   - type: web
     name: smartledger-app
+    runtime: docker
     env: docker
     plan: free
     dockerContext: .

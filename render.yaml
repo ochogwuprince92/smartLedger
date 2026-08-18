@@ -13,11 +13,7 @@ services:
       - key: POSTGRES_USER
         value: postgres
       - key: POSTGRES_PASSWORD
-        generateValue: true
-    disk:
-      name: data
-      mountPath: /var/lib/postgresql/data
-      sizeGB: 1
+        value: change_this_password_in_render_dashboard
 
   # Spring Boot Web Application
   - type: web
@@ -35,20 +31,11 @@ services:
           name: smartledger-db
           property: host
       - key: DATASOURCE_USERNAME
-        fromService:
-          type: pserv
-          name: smartledger-db
-          envVar: POSTGRES_USER
+        value: postgres
       - key: DATASOURCE_PASSWORD
-        fromService:
-          type: pserv
-          name: smartledger-db
-          envVar: POSTGRES_PASSWORD
+        value: change_this_password_in_render_dashboard
       - key: POSTGRES_DB
-        fromService:
-          type: pserv
-          name: smartledger-db
-          envVar: POSTGRES_DB
+        value: smartledger_db
       # Redis - Set these in Render dashboard after deployment
       # - key: REDIS_HOST
       #   value: your-redis-cloud-host.com

@@ -3,8 +3,10 @@ services:
   - type: pserv
     name: smartledger-db
     plan: free
+    runtime: docker
     env: docker
-    image: postgres:15-alpine
+    image:
+      url: postgres:16-alpine
     envVars:
       - key: POSTGRES_DB
         value: smartledger_db

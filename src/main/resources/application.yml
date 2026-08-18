@@ -62,7 +62,7 @@ spring:
       max-request-size: 10MB
 
 server:
-  port: ${PORT:8081}
+  port: ${PORT}
   servlet:
     context-path: /
   error:

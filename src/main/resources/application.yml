@@ -1,0 +1,120 @@
+spring:
+
+  application:
+    name: smartLedger
+  profiles:
+    active: local
+
+  mail:
+    host: ${MAIL_HOST:smtp.gmail.com}
+    port: ${MAIL_PORT:587}
+    protocol: ${MAIL_PROTOCOL:smtp}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_SMTP_STARTTLS_ENABLE:true}
+            required: ${MAIL_SMTP_STARTTLS_REQUIRED:true}
+          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT:30000}
+          timeout: ${MAIL_TIMEOUT:30000}
+          writetimeout: ${MAIL_WRITE_TIMEOUT:30000}
+
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        default_schema: public
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      timeout: 60000ms
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 0
+          max-wait: -1ms
+
+  task:
+    scheduling:
+      pool:
+        size: 5
+
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+server:
+  port: ${PORT:8081}
+  servlet:
+    context-path: /
+  error:
+    include-message: always
+    include-binding-errors: always
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      show-details: when-authorized
+
+app:
+  scheduled:
+    enabled: true
+    pool-size: 5
+    reconciliation: "0 0 2 * * ?"
+    report-generation: "0 0 6 * * MON"
+    data-cleanup: "0 0 3 * * ?"
+    ai-insights: "0 0 4 * * ?"
+    health-check: "0 */15 * * * ?"
+    notification-retry: "0 */5 * * * ?"
+  data-loader:
+    enabled: false
+  base-url: ${APP_BASE_URL:http://localhost:8081}
+  email:
+    enabled: ${APP_EMAIL_ENABLED:false}
+    from: ${APP_EMAIL_FROM:noreply@smartledger.com}
+    from-name: ${APP_EMAIL_FROM_NAME:SmartLedger}
+
+jwt:
+  secret: ${JWT_SECRET}
+  expiration: ${JWT_EXPIRATION}
+
+admin:
+  email: ${ADMIN_EMAIL}
+  default-password: ${ADMIN_PASSWORD}
+
+n8n:
+  base-url: ${N8N_BASE_URL:http://localhost:5678}
+  webhook-path: ${N8N_WEBHOOK_PATH:/webhook/finance-ai-insight}
+  callback-secret: ${N8N_CALLBACK_SECRET:your-secret-key-here}
+  timeout: ${N8N_TIMEOUT:30000}
+
+payment:
+  gateway:
+    paystack:
+      secret-key: ${PAYSTACK_SECRET_KEY:}
+      public-key: ${PAYSTACK_PUBLIC_KEY:}
+      callback-url: ${PAYSTACK_CALLBACK_URL:http://localhost:8081/api/payment/callback/paystack}
+      webhook-url: ${PAYSTACK_WEBHOOK_URL:http://localhost:8081/api/payment/webhook/paystack}
+      api-url: ${PAYSTACK_API_URL:https://api.paystack.co}

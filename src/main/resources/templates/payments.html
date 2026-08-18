@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Payments - SmartLedger</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body class="bg-light">
+    <div th:replace="~{fragments/layout :: navbar('payments')}"></div>
+    <div class="container py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1 class="h2 fw-bold">Payments</h1>
+            <div>
+                <button class="btn btn-success me-2" data-bs-toggle="modal" data-bs-target="#initiatePaystackModal">
+                    <i class="fas fa-credit-card me-2"></i>Pay with Paystack
+                </button>
+                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createPaymentModal" sec:authorize="hasAuthority('PAYMENT:CREATE')">
+                    <i class="fas fa-plus me-2"></i>Record Payment
+                </button>
+            </div>
+        </div>
+
+        <!-- Payment Stats -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Total Payments</h6>
+                        <h3 class="fw-bold" id="totalPayments">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Completed</h6>
+                        <h3 class="fw-bold text-success" id="completedPayments">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Pending</h6>
+                        <h3 class="fw-bold text-warning" id="pendingPayments">0</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body">
+                        <h6 class="card-title text-muted">Failed</h6>
+                        <h3 class="fw-bold text-danger" id="failedPayments">0</h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Table -->
+        <div class="card">
+            <div class="card-header bg-white">
+                <h5 class="card-title fw-bold mb-0">Recent Payments</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Payment Number</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Payer</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="paymentsTableBody">
+                            <!-- Dynamic content loaded via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div th:replace="~{fragments/layout :: scripts}"></div>
+
+    <!-- Initiate Paystack Modal -->
+    <div class="modal fade" id="initiatePaystackModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Pay with Paystack</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="initiatePaystackForm">
+                        <div class="mb-3">
+                            <label class="form-label">Payment Number</label>
+                            <input type="text" class="form-control" id="paystackPaymentNumber" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="paystackAmount" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Currency</label>
+                            <select class="form-select" id="paystackCurrency">
+                                <option value="NGN">NGN</option>
+                                <option value="USD">USD</option>
+                                <option value="GBP">GBP</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payer Name</label>
+                            <input type="text" class="form-control" id="paystackPayerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payer Email</label>
+                            <input type="email" class="form-control" id="paystackPayerEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payer Phone</label>
+                            <input type="tel" class="form-control" id="paystackPayerPhone">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="paystackDescription" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-success" onclick="initiatePaystackPayment()">Proceed to Payment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Create Payment Modal -->
+    <div class="modal fade" id="createPaymentModal" tabindex="-1" sec:authorize="hasAuthority('PAYMENT:CREATE')">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Record Payment</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="createPaymentForm">
+                        <div class="mb-3">
+                            <label class="form-label">Payment Number</label>
+                            <input type="text" class="form-control" id="paymentNumber" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Amount</label>
+                            <input type="number" class="form-control" id="paymentAmount" step="0.01" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Currency</label>
+                            <select class="form-select" id="paymentCurrency">
+                                <option value="USD">USD</option>
+                                <option value="NGN">NGN</option>
+                                <option value="GBP">GBP</option>
+                                <option value="EUR">EUR</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payment Method</label>
+                            <select class="form-select" id="paymentMethod">
+                                <option value="PAYSTACK">Paystack</option>
+                                <option value="BANK_TRANSFER">Bank Transfer</option>
+                                <option value="USSD">USSD</option>
+                                <option value="CARD">Card</option>
+                                <option value="QR_CODE">QR Code</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payer Name</label>
+                            <input type="text" class="form-control" id="payerName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Payer Email</label>
+                            <input type="email" class="form-control" id="payerEmail">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Description</label>
+                            <textarea class="form-control" id="paymentDescription" rows="2"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="createPayment()">Create Payment</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script th:inline="javascript">
+        const API_BASE = '/api/payment';
+        
+        // Check for payment callback on page load
+        /*<![CDATA[*/
+        const paymentCallback = /*[[${paymentCallback}]]*/ false;
+        const paymentReference = /*[[${paymentReference}]]*/ null;
+        /*]]>*/
+        
+        if (paymentCallback && paymentReference) {
+            // Verify payment when returning from Paystack
+            verifyPaymentCallback(paymentReference);
+        }
+
+        async function verifyPaymentCallback(reference) {
+            try {
+                const response = await fetch(`${API_BASE}/callback/paystack?reference=${reference}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    // Show success message
+                    const alertDiv = document.createElement('div');
+                    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+                    alertDiv.innerHTML = `
+                        <strong>Payment Verification:</strong> ${data.data.message || 'Payment verified successfully'}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    `;
+                    document.querySelector('.container').prepend(alertDiv);
+                    
+                    // Reload payments after a short delay
+                    setTimeout(loadPayments, 2000);
+                }
+            } catch (error) {
+                console.error('Error verifying payment callback:', error);
+            }
+        }
+
+        async function loadPayments() {
+            try {
+                const response = await fetch(`${API_BASE}/payments`);
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    renderPayments(data.data);
+                    updateStats(data.data);
+                }
+            } catch (error) {
+                console.error('Error loading payments:', error);
+            }
+        }
+
+        function renderPayments(payments) {
+            const tbody = document.getElementById('paymentsTableBody');
+            tbody.innerHTML = payments.map(payment => `
+                <tr>
+                    <td>${payment.paymentNumber}</td>
+                    <td>${payment.currencyCode} ${payment.amount}</td>
+                    <td>${payment.paymentMethod}</td>
+                    <td>${payment.payerName || '-'}</td>
+                    <td>${new Date(payment.paymentDate).toLocaleDateString()}</td>
+                    <td><span class="badge ${getStatusBadgeClass(payment.status)}">${payment.status}</span></td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" onclick="viewPayment('${payment.id}')"><i class="fas fa-eye"></i></button>
+                        ${payment.status === 'COMPLETED' ? `<button class="btn btn-sm btn-outline-success" onclick="generateReceipt('${payment.id}')"><i class="fas fa-file-pdf"></i></button>` : ''}
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function getStatusBadgeClass(status) {
+            switch(status) {
+                case 'COMPLETED': return 'bg-success';
+                case 'PENDING': return 'bg-warning';
+                case 'FAILED': return 'bg-danger';
+                case 'PROCESSING': return 'bg-info';
+                default: return 'bg-secondary';
+            }
+        }
+
+        function updateStats(payments) {
+            document.getElementById('totalPayments').textContent = payments.length;
+            document.getElementById('completedPayments').textContent = payments.filter(p => p.status === 'COMPLETED').length;
+            document.getElementById('pendingPayments').textContent = payments.filter(p => p.status === 'PENDING').length;
+            document.getElementById('failedPayments').textContent = payments.filter(p => p.status === 'FAILED').length;
+        }
+
+        async function createPayment() {
+            const payment = {
+                paymentNumber: document.getElementById('paymentNumber').value,
+                amount: parseFloat(document.getElementById('paymentAmount').value),
+                currencyCode: document.getElementById('paymentCurrency').value,
+                paymentMethod: document.getElementById('paymentMethod').value,
+                payerName: document.getElementById('payerName').value,
+                payerEmail: document.getElementById('payerEmail').value,
+                description: document.getElementById('paymentDescription').value
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/payments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payment)
+                });
+                
+                if (response.ok) {
+                    bootstrap.Modal.getInstance(document.getElementById('createPaymentModal')).hide();
+                    loadPayments();
+                    document.getElementById('createPaymentForm').reset();
+                }
+            } catch (error) {
+                console.error('Error creating payment:', error);
+            }
+        }
+
+        function viewPayment(id) {
+            window.location.href = `${API_BASE}/payments/${id}`;
+        }
+
+        function generateReceipt(id) {
+            window.open(`${API_BASE}/receipt/receipts/${id}/pdf`, '_blank');
+        }
+
+        async function initiatePaystackPayment() {
+            const paymentNumber = document.getElementById('paystackPaymentNumber').value;
+            const amount = parseFloat(document.getElementById('paystackAmount').value);
+            const currencyCode = document.getElementById('paystackCurrency').value;
+            const payerName = document.getElementById('paystackPayerName').value;
+            const payerEmail = document.getElementById('paystackPayerEmail').value;
+            const payerPhone = document.getElementById('paystackPayerPhone').value;
+            const description = document.getElementById('paystackDescription').value;
+
+            // Validation
+            if (!paymentNumber || !amount || !payerName || !payerEmail) {
+                alert('Please fill in all required fields');
+                return;
+            }
+
+            const payment = {
+                paymentNumber: paymentNumber,
+                paymentDate: new Date().toISOString(),
+                amount: amount,
+                currencyCode: currencyCode,
+                paymentMethod: 'PAYSTACK',
+                payerName: payerName,
+                payerEmail: payerEmail,
+                payerPhone: payerPhone,
+                description: description,
+                callbackUrl: window.location.origin + '/payment/callback'
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/initiate-gateway-payment`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payment)
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success && data.data && data.data.authorizationUrl) {
+                    bootstrap.Modal.getInstance(document.getElementById('initiatePaystackModal')).hide();
+                    document.getElementById('initiatePaystackForm').reset();
+                    
+                    // Redirect to Paystack authorization URL
+                    window.location.href = data.data.authorizationUrl;
+                } else {
+                    alert('Failed to initiate payment: ' + (data.message || 'Unknown error'));
+                }
+            } catch (error) {
+                console.error('Error initiating Paystack payment:', error);
+                alert('Error initiating payment: ' + error.message);
+            }
+        }
+
+        // Load payments on page load
+        document.addEventListener('DOMContentLoaded', loadPayments);
+    </script>
+</body>
+</html>

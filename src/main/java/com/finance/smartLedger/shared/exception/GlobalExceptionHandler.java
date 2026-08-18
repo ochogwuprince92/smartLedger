@@ -2,6 +2,7 @@ package com.finance.smartLedger.shared.exception;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -28,7 +29,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
   @Override
   protected ResponseEntity<Object> handleMethodArgumentNotValid(
       MethodArgumentNotValidException ex, org.springframework.http.HttpHeaders headers,
-      HttpStatus status, WebRequest request) {
+      HttpStatusCode status, WebRequest request) {
     String errorMessage = ex.getBindingResult().getFieldErrors().stream()
         .map(error -> error.getField() + ": " + error.getDefaultMessage())
         .reduce((a, b) -> a + ", " + b)

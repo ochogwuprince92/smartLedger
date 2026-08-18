@@ -39,7 +39,6 @@ services:
       # - key: REDIS_PORT
       #   value: 6379
       # - key: REDIS_PASSWORD
-      #   value: your-redis-password
       - key: JWT_SECRET
         generateValue: true
       - key: JWT_EXPIRATION

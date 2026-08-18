@@ -3,6 +3,8 @@ services:
   - type: pserv
     name: smartledger-db
     plan: free
+    env: docker
+    image: postgres:15-alpine
     envVars:
       - key: POSTGRES_DB
         value: smartledger_db
@@ -10,6 +12,10 @@ services:
         value: postgres
       - key: POSTGRES_PASSWORD
         generateValue: true
+    disk:
+      name: data
+      mountPath: /var/lib/postgresql/data
+      sizeGB: 1
 
   # Spring Boot Web Application
   - type: web
@@ -25,7 +31,7 @@ services:
         fromService:
           type: pserv
           name: smartledger-db
-          property: connectionString
+          property: host
       - key: DATASOURCE_USERNAME
         fromService:
           type: pserv
@@ -36,6 +42,11 @@ services:
           type: pserv
           name: smartledger-db
           envVar: POSTGRES_PASSWORD
+      - key: POSTGRES_DB
+        fromService:
+          type: pserv
+          name: smartledger-db
+          envVar: POSTGRES_DB
       # Redis - Set these in Render dashboard after deployment
       # - key: REDIS_HOST
       #   value: your-redis-cloud-host.com

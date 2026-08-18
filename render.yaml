@@ -1,12 +1,15 @@
 services:
   # PostgreSQL Database
-  - type: postgres
+  - type: pserv
     name: smartledger-db
     plan: free
-    databaseName: smartledger_db
-    user: postgres
-
-  # Redis (using Redis Cloud free tier via external service)
+    envVars:
+      - key: POSTGRES_DB
+        value: smartledger_db
+      - key: POSTGRES_USER
+        value: postgres
+      - key: POSTGRES_PASSWORD
+        generateValue: true
 
   # Spring Boot Web Application
   - type: web

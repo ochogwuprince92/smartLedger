@@ -46,9 +46,13 @@ public class TestDatabaseConfiguration {
     
     // Disable data loader for tests
     registry.add("app.data-loader.enabled", () -> "false");
+    
+    // Add JWT configuration for tests
+    registry.add("JWT_SECRET", () -> "test-secret-key-for-testing-only");
+    registry.add("JWT_EXPIRATION", () -> "86400000");
   }
 
-  private static void configureWithLocalDatabase(DynamicPropertyRegistry registry) {
+  public static void configureWithLocalDatabase(DynamicPropertyRegistry registry) {
     // Use existing local database configuration from application.yml
     registry.add("spring.datasource.url", () -> 
         System.getenv().getOrDefault("DATASOURCE_URL", "jdbc:postgresql://localhost:5432/smartledger_db"));
@@ -69,6 +73,10 @@ public class TestDatabaseConfiguration {
     
     // Disable data loader for tests
     registry.add("app.data-loader.enabled", () -> "false");
+    
+    // Add JWT configuration for tests
+    registry.add("JWT_SECRET", () -> "test-secret-key-for-testing-only");
+    registry.add("JWT_EXPIRATION", () -> "86400000");
   }
 
   public static void stopContainer() {

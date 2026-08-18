@@ -37,7 +37,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, errorMessage);
     problemDetail.setTitle("Validation Failed");
     problemDetail.setType(java.net.URI.create("https://api.smartledger.com/errors/ERR-1001"));
-    return ResponseEntity.of(problemDetail).build();
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
   }
 
   @ExceptionHandler(Exception.class)

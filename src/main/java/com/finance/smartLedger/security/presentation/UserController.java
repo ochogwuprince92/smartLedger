@@ -165,5 +165,5 @@ public class UserController {
         ApiResponse.success("Permission revoked successfully", UserResponse.from(user)));
   }
 
-  record PasswordUpdateRequest(String oldPassword, String newPassword) {}
+  public record PasswordUpdateRequest(String oldPassword, String newPassword) {}
 }

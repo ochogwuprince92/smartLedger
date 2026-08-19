@@ -61,7 +61,25 @@ public class AuthController {
     return ResponseEntity.ok(ApiResponse.success("Password has been reset successfully", null));
   }
 
-  record LoginRequest(String username, String password) {}
+  @PostMapping("/change-password")
+  public ResponseEntity<ApiResponse<Void>> changePassword(
+      @Valid @RequestBody ChangePasswordRequest request,
+      Authentication authentication) {
+    String username = authentication.getName();
+    User user = userService.getUserByUsername(username);
+    
+    // If currentPassword is null/empty, it means forced password change (no current password required)
+    String oldPasswordParam = (request.currentPassword() != null && !request.currentPassword().isEmpty()) 
+        ? request.currentPassword() 
+        : null;
+    userService.updatePassword(user.getId(), oldPasswordParam, request.newPassword());
+    
+    return ResponseEntity.ok(ApiResponse.success("Password changed successfully", null));
+  }
 
-  record LoginResponse(String token, java.util.UUID userId, String username, String email) {}
+  public record LoginRequest(String username, String password) {}
+
+  public record LoginResponse(String token, java.util.UUID userId, String username, String email) {}
+
+  public record ChangePasswordRequest(String currentPassword, String newPassword) {}
 }

@@ -112,6 +112,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     String method = request.getMethod();
     // Allow both JSON API endpoint and web page for password change
     return (path.matches("/api/v1/users/[a-f0-9-]+/password") && "PATCH".equalsIgnoreCase(method))
+        || (path.equals("/api/v1/auth/change-password") && "POST".equalsIgnoreCase(method))
         || (path.equals("/change-password") && "GET".equalsIgnoreCase(method))
         || (path.equals("/change-password") && "POST".equalsIgnoreCase(method));
   }

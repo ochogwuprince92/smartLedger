@@ -21,7 +21,9 @@ import org.springframework.test.web.servlet.MockMvc;
 @AutoConfigureMockMvc
 @TestPropertySource(properties = {
     "app.scheduled.enabled=false",
-    "app.data-loader.enabled=false"
+    "app.data-loader.enabled=false",
+    "spring.jpa.hibernate.ddl-auto=update",
+    "spring.flyway.enabled=false"
 })
 class WebControllerTest {
 

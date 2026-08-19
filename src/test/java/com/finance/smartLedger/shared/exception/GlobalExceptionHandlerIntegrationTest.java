@@ -22,8 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 @WithMockUser(authorities = "USER:READ")
 @Transactional
 @TestPropertySource(properties = {
-  "spring.jpa.hibernate.ddl-auto=none",
-  "spring.jpa.hibernate.hbm2ddl.auto=none"
+  "spring.jpa.hibernate.ddl-auto=update",
+  "spring.flyway.enabled=false"
 })
 class GlobalExceptionHandlerIntegrationTest {
 

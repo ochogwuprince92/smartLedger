@@ -6,8 +6,8 @@ import org.springframework.test.context.TestPropertySource;
 
 @SpringBootTest
 @TestPropertySource(properties = {
-  "spring.jpa.hibernate.ddl-auto=none",
-  "spring.jpa.hibernate.hbm2ddl.auto=none"
+  "spring.jpa.hibernate.ddl-auto=update",
+  "spring.flyway.enabled=false"
 })
 class SmartLedgerApplicationTests {
 

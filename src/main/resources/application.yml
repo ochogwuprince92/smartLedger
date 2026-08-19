@@ -87,8 +87,8 @@ jwt:
   expiration: ${JWT_EXPIRATION:86400000}
 
 admin:
-  email: ${ADMIN_EMAIL:admin@smartledger.test}
-  default-password: ${ADMIN_PASSWORD:admin123}
+  email: ${ADMIN_EMAIL}
+  default-password: ${ADMIN_PASSWORD}
 
 n8n:
   base-url: ${N8N_BASE_URL:http://localhost:5678}

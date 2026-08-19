@@ -14,7 +14,7 @@ public record CreateAccountRequest(
         String accountCode,
     @Schema(description = "Account name", example = "Cash Account", required = true) @NotBlank
         String accountName,
-    @Schema(description = "Account type", required = true) @NotNull AccountType accountType,
+    @Schema(description = "Account type", example = "ASSET", required = true, allowableValues = {"ASSET", "LIABILITY", "EQUITY", "REVENUE", "EXPENSE"}) @NotNull AccountType accountType,
     @Schema(description = "Initial balance", required = true) @NotNull Money initialBalance,
-    @Schema(description = "User who created the account", required = true) @NotBlank
+    @Schema(description = "User who created the account", example = "admin", required = true) @NotBlank
         String createdBy) {}

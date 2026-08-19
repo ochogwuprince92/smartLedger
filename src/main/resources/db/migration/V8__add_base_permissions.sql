@@ -127,7 +127,10 @@ SELECT r.id, p.id
 FROM roles r 
 CROSS JOIN permissions p 
 WHERE r.code = 'ADMIN'
-ON CONFLICT (role_id, permission_id) DO NOTHING;
+AND NOT EXISTS (
+  SELECT 1 FROM role_permissions rp
+  WHERE rp.role_id = r.id AND rp.permission_id = p.id
+);
 
 -- ============================================
 -- ENSURE ADMIN USER HAS ADMIN ROLE

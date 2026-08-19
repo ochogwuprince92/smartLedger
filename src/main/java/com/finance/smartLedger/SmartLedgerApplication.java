@@ -15,3 +15,4 @@ public class SmartLedgerApplication {
     SpringApplication.run(SmartLedgerApplication.class, args);
   }
 }
+

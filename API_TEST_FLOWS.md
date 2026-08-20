@@ -2077,8 +2077,8 @@ payment:
 **Request:**
 ```json
 {
-  "accountNumber": "ACC001",
-  "accountCode": "1001",
+  "accountNumber": "111111001",
+  "accountCode": "AC001",
   "accountName": "Cash Account",
   "accountType": "ASSET",
   "initialBalance": {
@@ -2126,7 +2126,7 @@ payment:
 
 **Postman Setup:**
 - Method: POST
-- URL: `http://localhost:8081/api/v1/accounts`
+- URL: `http://localhost:8081/api/v1/ledger/accounts`
 - Headers: 
   - `Content-Type: application/json`
   - `Authorization: Bearer <your-jwt-token>`
@@ -2136,7 +2136,8 @@ payment:
 
 ### 23. Get Account Balance
 
-**Endpoint:** `GET /api/v1/accounts/{accountId}/balance`
+**Endpoint:** `GET/api/ledger/accounts
+`
 
 **Purpose:** Retrieve current balance of an account.
 
@@ -2167,7 +2168,7 @@ payment:
 
 **Postman Setup:**
 - Method: GET
-- URL: `http://localhost:8081/api/v1/accounts/{accountId}/balance`
+- URL: `http://localhost:8081/api/v1/ledger/{Id}/balance`
 - Headers: 
   - `Authorization: Bearer <your-jwt-token>`
 

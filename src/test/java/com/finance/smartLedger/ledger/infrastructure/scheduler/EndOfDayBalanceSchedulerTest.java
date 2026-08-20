@@ -17,6 +17,7 @@ import com.finance.smartLedger.shared.util.ClockProvider;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -50,9 +51,10 @@ class EndOfDayBalanceSchedulerTest {
   @Test
   void processEndOfDayBalances_ShouldCallBalanceServiceAndAlert_WhenTrialBalanceNotBalanced() {
     // Given
-    when(balanceService.isTrialBalanceBalanced()).thenReturn(false);
-    when(balanceService.calculateTrialBalance()).thenReturn(
-        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(100), "USD"));
+    when(balanceService.calculateTrialBalanceByCurrency()).thenReturn(
+        Map.of(
+            "USD",
+            com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(100), "USD")));
     when(balanceService.getAccountsWithNegativeBalance()).thenReturn(new ArrayList<>());
     when(balanceService.getAccountsWithZeroBalance()).thenReturn(new ArrayList<>());
 
@@ -65,8 +67,7 @@ class EndOfDayBalanceSchedulerTest {
     scheduler.processEndOfDayBalances();
 
     // Then
-    verify(balanceService).isTrialBalanceBalanced();
-    verify(balanceService).calculateTrialBalance();
+    verify(balanceService).calculateTrialBalanceByCurrency();
     verify(balanceService).getAccountsWithNegativeBalance();
     verify(balanceService).getAccountsWithZeroBalance();
     verify(notificationService, atLeastOnce()).createNotification(
@@ -85,10 +86,9 @@ class EndOfDayBalanceSchedulerTest {
   @Test
   void processEndOfDayBalances_ShouldAlert_WhenAccountsHaveNegativeBalance() {
     // Given
-    when(balanceService.isTrialBalanceBalanced()).thenReturn(true);
-    when(balanceService.calculateTrialBalance()).thenReturn(
-        com.finance.smartLedger.shared.valueobject.Money.zero("USD"));
-    
+    when(balanceService.calculateTrialBalanceByCurrency()).thenReturn(
+        Map.of("USD", com.finance.smartLedger.shared.valueobject.Money.zero("USD")));
+
     Account negativeAccount = new Account();
     when(balanceService.getAccountsWithNegativeBalance()).thenReturn(List.of(negativeAccount));
     when(balanceService.getAccountsWithZeroBalance()).thenReturn(new ArrayList<>());
@@ -100,7 +100,7 @@ class EndOfDayBalanceSchedulerTest {
     scheduler.processEndOfDayBalances();
 
     // Then
-    verify(balanceService).isTrialBalanceBalanced();
+    verify(balanceService).calculateTrialBalanceByCurrency();
     verify(balanceService).getAccountsWithNegativeBalance();
     verify(notificationService, atLeastOnce()).createNotification(
         anyString(),
@@ -118,9 +118,10 @@ class EndOfDayBalanceSchedulerTest {
   @Test
   void processEndOfDayBalances_ShouldNotAlert_WhenEverythingBalancesCorrectly() {
     // Given - regression guard: quiet on normal night
-    when(balanceService.isTrialBalanceBalanced()).thenReturn(true);
-    when(balanceService.calculateTrialBalance()).thenReturn(
-        com.finance.smartLedger.shared.valueobject.Money.zero("USD"));
+    when(balanceService.calculateTrialBalanceByCurrency()).thenReturn(
+        Map.of(
+            "USD", com.finance.smartLedger.shared.valueobject.Money.zero("USD"),
+            "NGN", com.finance.smartLedger.shared.valueobject.Money.zero("NGN")));
     when(balanceService.getAccountsWithNegativeBalance()).thenReturn(new ArrayList<>());
     when(balanceService.getAccountsWithZeroBalance()).thenReturn(new ArrayList<>());
 
@@ -128,8 +129,7 @@ class EndOfDayBalanceSchedulerTest {
     scheduler.processEndOfDayBalances();
 
     // Then
-    verify(balanceService).isTrialBalanceBalanced();
-    verify(balanceService).calculateTrialBalance();
+    verify(balanceService).calculateTrialBalanceByCurrency();
     verify(balanceService).getAccountsWithNegativeBalance();
     verify(balanceService).getAccountsWithZeroBalance();
     verify(notificationService, never()).createNotification(

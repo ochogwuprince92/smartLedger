@@ -48,4 +48,7 @@ public interface JournalEntryRepository
       @Param("accountId") UUID accountId,
       @Param("startDate") LocalDateTime startDate,
       @Param("endDate") LocalDateTime endDate);
+
+  @Query("SELECT je FROM JournalEntry je LEFT JOIN FETCH je.lineItems WHERE je.id = :id")
+  Optional<JournalEntry> findByIdWithLineItems(@Param("id") UUID id);
 }

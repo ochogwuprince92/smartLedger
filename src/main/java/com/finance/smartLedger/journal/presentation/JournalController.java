@@ -57,10 +57,10 @@ public class JournalController {
           "system");
     }
 
-    // Reload the journal entry to ensure lineItems are properly loaded
+    // Reload the journal entry with lineItems to ensure they are properly loaded
     journalEntry =
         journalEntryService
-            .findById(journalEntry.getId())
+            .findByIdWithLineItems(journalEntry.getId())
             .orElseThrow(() -> new IllegalArgumentException("Journal entry not found"));
 
     return ResponseEntity.status(HttpStatus.CREATED)

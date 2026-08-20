@@ -131,6 +131,11 @@ public class JournalEntryService {
     return journalEntryRepository.findById(id);
   }
 
+  @Transactional(readOnly = true)
+  public Optional<JournalEntry> findByIdWithLineItems(UUID id) {
+    return journalEntryRepository.findByIdWithLineItems(id);
+  }
+
   public Optional<JournalEntry> findByEntryNumber(String entryNumber) {
     return journalEntryRepository.findByEntryNumber(entryNumber);
   }

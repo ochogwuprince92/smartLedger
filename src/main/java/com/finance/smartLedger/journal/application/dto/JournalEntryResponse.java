@@ -27,9 +27,11 @@ public record JournalEntryResponse(
   public static JournalEntryResponse from(
       com.finance.smartLedger.journal.domain.JournalEntry journalEntry) {
     List<JournalLineItemResponse> lineItemResponses =
-        journalEntry.getLineItems().stream()
-            .map(JournalLineItemResponse::from)
-            .collect(Collectors.toList());
+        journalEntry.getLineItems() != null
+            ? journalEntry.getLineItems().stream()
+                .map(JournalLineItemResponse::from)
+                .collect(Collectors.toList())
+            : List.of();
 
     return new JournalEntryResponse(
         journalEntry.getId(),

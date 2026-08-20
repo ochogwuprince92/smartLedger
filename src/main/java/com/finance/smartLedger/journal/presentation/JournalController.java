@@ -57,6 +57,12 @@ public class JournalController {
           "system");
     }
 
+    // Reload the journal entry to ensure lineItems are properly loaded
+    journalEntry =
+        journalEntryService
+            .findById(journalEntry.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Journal entry not found"));
+
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             ApiResponse.success(

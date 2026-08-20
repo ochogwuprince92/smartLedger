@@ -2178,7 +2178,7 @@ payment:
 
 ### 24. Create Journal Entry
 
-**Endpoint:** `POST /api/v1/journal-entries`
+**Endpoint:** `POST /api/journal/entries`
 
 **Purpose:** Create a new journal entry for double-entry bookkeeping.
 
@@ -2187,25 +2187,45 @@ payment:
 **Request:**
 ```json
 {
-  "entryDate": "2024-08-15",
+  "entryNumber": "JE-2024-001",
+  "entryDate": "2024-08-15T10:30:00",
+  "entryType": "MANUAL",
+  "referenceNumber": "INV-24-00001",
   "description": "Tuition fee payment received",
-  "reference": "INV-24-00001",
-  "lines": [
+  "lineItems": [
     {
       "accountId": "550e8400-e29b-41d4-a716-446655440008",
-      "debitAmount": 2500.00,
-      "creditAmount": 0.00,
+      "debitCredit": "DEBIT",
+      "amount": {
+        "amount": 2500.00,
+        "currencyCode": "USD"
+      },
       "description": "Cash received"
     },
     {
       "accountId": "550e8400-e29b-41d4-a716-446655440009",
-      "debitAmount": 0.00,
-      "creditAmount": 2500.00,
+      "debitCredit": "CREDIT",
+      "amount": {
+        "amount": 2500.00,
+        "currencyCode": "USD"
+      },
       "description": "Tuition revenue"
     }
   ]
 }
 ```
+
+**Request Fields:**
+- `entryNumber` (String, required): Unique journal entry number
+- `entryDate` (LocalDateTime, required): Date and time of the entry
+- `entryType` (Enum, required): One of `MANUAL`, `AUTOMATIC`, `RECURRING`, `ADJUSTING`, `CLOSING`
+- `referenceNumber` (String, optional): Reference to related document
+- `description` (String, required): Description of the journal entry
+- `lineItems` (Array, required): Array of journal line items
+  - `accountId` (UUID, required): Account ID for the line item
+  - `debitCredit` (Enum, required): Either `DEBIT` or `CREDIT`
+  - `amount` (Object, required): Money object with `amount` (BigDecimal) and `currencyCode` (String)
+  - `description` (String, optional): Description of the line item
 
 **Success Response (201 Created):**
 ```json

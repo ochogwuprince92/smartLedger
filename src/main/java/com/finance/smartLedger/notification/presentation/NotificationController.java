@@ -11,6 +11,7 @@ import com.finance.smartLedger.notification.domain.NotificationType;
 import com.finance.smartLedger.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -59,7 +60,11 @@ public class NotificationController {
   @PreAuthorize("hasAuthority('NOTIFICATION:UPDATE')")
   public ResponseEntity<ApiResponse<NotificationResponse>> sendNotification(
       @Parameter(description = "Notification ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User sending the notification") ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User sending the notification",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Notification notification = notificationService.sendNotification(id);
     return ResponseEntity.ok(
         ApiResponse.success(
@@ -73,8 +78,11 @@ public class NotificationController {
   @PreAuthorize("hasAuthority('NOTIFICATION:UPDATE')")
   public ResponseEntity<ApiResponse<NotificationResponse>> markAsDelivered(
       @Parameter(description = "Notification ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User marking the notification as delivered")
-          ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User marking the notification as delivered",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Notification notification = notificationService.markAsDelivered(id);
     return ResponseEntity.ok(
         ApiResponse.success(
@@ -100,7 +108,11 @@ public class NotificationController {
   @PreAuthorize("hasAuthority('NOTIFICATION:UPDATE')")
   public ResponseEntity<ApiResponse<NotificationResponse>> retryNotification(
       @Parameter(description = "Notification ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User retrying the notification") ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User retrying the notification",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Notification notification = notificationService.retryNotification(id);
     return ResponseEntity.ok(
         ApiResponse.success(

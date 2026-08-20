@@ -16,13 +16,9 @@ import lombok.NoArgsConstructor;
 @EqualsAndHashCode
 @NoArgsConstructor
 @AllArgsConstructor
-@io.swagger.v3.oas.annotations.media.Schema(description = "Money value object representing amount and currency")
 public class Money {
 
-  @io.swagger.v3.oas.annotations.media.Schema(description = "Monetary amount", example = "1000.00", required = true)
   private BigDecimal amount;
-  
-  @io.swagger.v3.oas.annotations.media.Schema(description = "Currency code (ISO 4217)", example = "USD", required = true)
   private String currencyCode;
 
   private static void validate(BigDecimal amount, String currencyCode) {

@@ -9,6 +9,7 @@ import com.finance.smartLedger.payment.domain.PaymentStatus;
 import com.finance.smartLedger.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -70,7 +71,11 @@ public class PaymentController {
   @PreAuthorize("hasAuthority('PAYMENT:UPDATE')")
   public ResponseEntity<ApiResponse<PaymentResponse>> processPayment(
       @Parameter(description = "Payment ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User processing the payment") ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User processing the payment",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Payment payment = paymentService.processPayment(id, request.updatedBy());
     return ResponseEntity.ok(
         ApiResponse.success("Payment processing started", PaymentResponse.from(payment)));
@@ -115,7 +120,11 @@ public class PaymentController {
   @PreAuthorize("hasAuthority('PAYMENT:UPDATE')")
   public ResponseEntity<ApiResponse<PaymentResponse>> refundPayment(
       @Parameter(description = "Payment ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User refunding the payment") ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User refunding the payment",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Payment payment = paymentService.refundPayment(id, request.updatedBy());
     return ResponseEntity.ok(
         ApiResponse.success("Payment refunded successfully", PaymentResponse.from(payment)));
@@ -126,7 +135,11 @@ public class PaymentController {
   @PreAuthorize("hasAuthority('PAYMENT:UPDATE')")
   public ResponseEntity<ApiResponse<PaymentResponse>> cancelPayment(
       @Parameter(description = "Payment ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User cancelling the payment") ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User cancelling the payment",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Payment payment = paymentService.cancelPayment(id, request.updatedBy());
     return ResponseEntity.ok(
         ApiResponse.success("Payment cancelled successfully", PaymentResponse.from(payment)));

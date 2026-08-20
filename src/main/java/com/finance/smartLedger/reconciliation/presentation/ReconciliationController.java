@@ -7,6 +7,7 @@ import com.finance.smartLedger.reconciliation.domain.ReconciliationStatus;
 import com.finance.smartLedger.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -56,8 +57,11 @@ public class ReconciliationController {
   @PreAuthorize("hasAuthority('RECONCILIATION:UPDATE')")
   public ResponseEntity<ApiResponse<ReconciliationResponse>> startReconciliation(
       @Parameter(description = "Reconciliation ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User starting the reconciliation")
-          ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User starting the reconciliation",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Reconciliation reconciliation =
         reconciliationService.startReconciliation(id, request.updatedBy());
     return ResponseEntity.ok(
@@ -70,8 +74,11 @@ public class ReconciliationController {
   @PreAuthorize("hasAuthority('RECONCILIATION:UPDATE')")
   public ResponseEntity<ApiResponse<ReconciliationResponse>> completeReconciliation(
       @Parameter(description = "Reconciliation ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User completing the reconciliation")
-          ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User completing the reconciliation",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Reconciliation reconciliation =
         reconciliationService.completeReconciliation(id, request.updatedBy());
     return ResponseEntity.ok(
@@ -84,7 +91,11 @@ public class ReconciliationController {
   @PreAuthorize("hasAuthority('RECONCILIATION:UPDATE')")
   public ResponseEntity<ApiResponse<ReconciliationResponse>> failReconciliation(
       @Parameter(description = "Reconciliation ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User failing the reconciliation") ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User failing the reconciliation",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Reconciliation reconciliation =
         reconciliationService.failReconciliation(id, request.updatedBy());
     return ResponseEntity.ok(

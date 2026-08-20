@@ -8,6 +8,7 @@ import com.finance.smartLedger.reporting.domain.ReportType;
 import com.finance.smartLedger.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -54,7 +55,11 @@ public class ReportController {
   @PreAuthorize("hasAuthority('REPORTING:UPDATE')")
   public ResponseEntity<ApiResponse<ReportResponse>> generateReport(
       @Parameter(description = "Report ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User generating the report") ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User generating the report",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Report report = reportService.generateReport(id, request.updatedBy());
     return ResponseEntity.ok(
         ApiResponse.success("Report generated successfully", ReportResponse.from(report)));

@@ -2068,25 +2068,36 @@ payment:
 
 ### 22. Create Account
 
-**Endpoint:** `POST /api/v1/accounts`
+**Endpoint:** `POST /api/ledger/accounts`
 
-**Purpose:** Create a new ledger account.
+**Purpose:** Create a new ledger account with the specified details.
 
-**Authentication:** Requires `LEDGER:UPDATE` permission
+**Authentication:** Requires `LEDGER:CREATE` permission
 
 **Request:**
 ```json
 {
-  "accountNumber": "1001",
-  "accountCode": "AST",
-  "accountName": "Cash",
+  "accountNumber": "ACC001",
+  "accountCode": "1001",
+  "accountName": "Cash Account",
   "accountType": "ASSET",
-  "normalBalance": "DEBIT",
-  "currency": "USD",
-  "openingBalance": 10000.00,
-  "description": "Primary cash account"
+  "initialBalance": {
+    "amount": 1000.00,
+    "currencyCode": "USD"
+  },
+  "createdBy": "admin"
 }
 ```
+
+**Request Details:**
+- `accountNumber`: Unique account number (required)
+- `accountCode`: Account code (required)
+- `accountName`: Human-readable account name (required)
+- `accountType`: Account type - ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE (required)
+- `initialBalance`: Initial balance with amount and currencyCode (required)
+- `createdBy`: Username of the user creating the account (required)
+
+**Note:** The Swagger UI may show incorrect request body format due to limitations with `@Embeddable` JPA entities. Use the format above for actual API calls.
 
 **Success Response (201 Created):**
 ```json

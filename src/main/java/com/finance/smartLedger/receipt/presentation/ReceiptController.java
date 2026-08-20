@@ -8,6 +8,7 @@ import com.finance.smartLedger.receipt.domain.ReceiptStatus;
 import com.finance.smartLedger.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -49,8 +50,11 @@ public class ReceiptController {
   @PreAuthorize("hasAuthority('RECEIPT:UPDATE')")
   public ResponseEntity<ApiResponse<ReceiptResponse>> markAsSent(
       @Parameter(description = "Receipt ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User marking the receipt as sent")
-          ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User marking the receipt as sent",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Receipt receipt = receiptService.markAsSent(id);
     return ResponseEntity.ok(
         ApiResponse.success("Receipt marked as sent", ReceiptResponse.from(receipt)));
@@ -61,8 +65,11 @@ public class ReceiptController {
   @PreAuthorize("hasAuthority('RECEIPT:UPDATE')")
   public ResponseEntity<ApiResponse<ReceiptResponse>> markAsDelivered(
       @Parameter(description = "Receipt ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User marking the receipt as delivered")
-          ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User marking the receipt as delivered",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Receipt receipt = receiptService.markAsDelivered(id);
     return ResponseEntity.ok(
         ApiResponse.success("Receipt marked as delivered", ReceiptResponse.from(receipt)));
@@ -84,7 +91,11 @@ public class ReceiptController {
   @PreAuthorize("hasAuthority('RECEIPT:UPDATE')")
   public ResponseEntity<ApiResponse<ReceiptResponse>> cancelReceipt(
       @Parameter(description = "Receipt ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User cancelling the receipt") ActionRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User cancelling the receipt",
+          content = @Content(schema = @Schema(implementation = ActionRequest.class)))
+      ActionRequest request) {
     Receipt receipt = receiptService.cancelReceipt(id);
     return ResponseEntity.ok(
         ApiResponse.success("Receipt cancelled successfully", ReceiptResponse.from(receipt)));

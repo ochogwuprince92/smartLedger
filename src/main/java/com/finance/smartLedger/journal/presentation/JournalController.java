@@ -8,6 +8,7 @@ import com.finance.smartLedger.journal.domain.JournalEntryType;
 import com.finance.smartLedger.shared.dto.ApiResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -69,7 +70,11 @@ public class JournalController {
   @PreAuthorize("hasAuthority('JOURNAL:POST')")
   public ResponseEntity<ApiResponse<JournalEntryResponse>> postJournalEntry(
       @Parameter(description = "Journal entry ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "User posting the entry") PostRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "User posting the entry",
+          content = @Content(schema = @Schema(implementation = PostRequest.class)))
+      PostRequest request) {
     JournalEntry postedEntry = journalEntryService.postJournalEntry(id, request.postedBy());
     return ResponseEntity.ok(
         ApiResponse.success(

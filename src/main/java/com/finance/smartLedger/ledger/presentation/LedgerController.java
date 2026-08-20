@@ -10,6 +10,7 @@ import com.finance.smartLedger.shared.dto.ApiResponse;
 import com.finance.smartLedger.shared.valueobject.Money;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import java.util.List;
@@ -36,7 +37,11 @@ public class LedgerController {
       description = "Creates a new ledger account with the specified details")
   @PreAuthorize("hasAuthority('LEDGER:CREATE')")
   public ResponseEntity<ApiResponse<AccountResponse>> createAccount(
-      @RequestBody @Schema(description = "Account creation request") CreateAccountRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Account creation request",
+          content = @Content(schema = @Schema(implementation = CreateAccountRequest.class)))
+      CreateAccountRequest request) {
     Account account =
         accountService.createAccount(
             request.accountNumber(),
@@ -110,7 +115,11 @@ public class LedgerController {
   @PreAuthorize("hasAuthority('LEDGER:UPDATE')")
   public ResponseEntity<ApiResponse<AccountResponse>> patchAccount(
       @Parameter(description = "Account ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "Account patch request") PatchAccountRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Account patch request",
+          content = @Content(schema = @Schema(implementation = PatchAccountRequest.class)))
+      PatchAccountRequest request) {
     Account account =
         accountService.patchAccount(
             id,
@@ -129,7 +138,11 @@ public class LedgerController {
   @PreAuthorize("hasAuthority('LEDGER:UPDATE')")
   public ResponseEntity<ApiResponse<AccountResponse>> updateAccountBalance(
       @Parameter(description = "Account ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "Balance update request") BalanceUpdateRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Balance update request",
+          content = @Content(schema = @Schema(implementation = BalanceUpdateRequest.class)))
+      BalanceUpdateRequest request) {
     Account account =
         accountService.updateBalance(
             id, request.operation().name(), request.amount(), request.updatedBy());
@@ -247,8 +260,11 @@ public class LedgerController {
   @PreAuthorize("hasAuthority('LEDGER:UPDATE')")
   public ResponseEntity<ApiResponse<AccountResponse>> adjustBalance(
       @Parameter(description = "Account ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "Balance adjustment request")
-          AdjustBalanceRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Balance adjustment request",
+          content = @Content(schema = @Schema(implementation = AdjustBalanceRequest.class)))
+      AdjustBalanceRequest request) {
     Account account =
         balanceService.adjustBalanceWithAccount(
             id, request.amount(), request.reason(), request.updatedBy());
@@ -262,8 +278,11 @@ public class LedgerController {
       description = "Transfers balance from one account to another")
   @PreAuthorize("hasAuthority('LEDGER:UPDATE')")
   public ResponseEntity<ApiResponse<Void>> transferBalance(
-      @RequestBody @Schema(description = "Balance transfer request")
-          TransferBalanceRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Balance transfer request",
+          content = @Content(schema = @Schema(implementation = TransferBalanceRequest.class)))
+      TransferBalanceRequest request) {
     balanceService.transferBalance(
         request.fromAccountId(),
         request.toAccountId(),
@@ -322,8 +341,11 @@ public class LedgerController {
   @PreAuthorize("hasAuthority('LEDGER:UPDATE')")
   public ResponseEntity<ApiResponse<AccountResponse>> reconcileBalance(
       @Parameter(description = "Account ID") @PathVariable UUID id,
-      @RequestBody @Schema(description = "Balance reconciliation request")
-          ReconcileBalanceRequest request) {
+      @RequestBody
+      @io.swagger.v3.oas.annotations.parameters.RequestBody(
+          description = "Balance reconciliation request",
+          content = @Content(schema = @Schema(implementation = ReconcileBalanceRequest.class)))
+      ReconcileBalanceRequest request) {
     Account account =
         balanceService.reconcileBalanceWithAccount(
             id, request.expectedBalance(), request.reason(), request.updatedBy());

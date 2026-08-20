@@ -7,6 +7,8 @@ application-local.yml
 application-test.yml
 .env
 flyway.toml
+chromedriver-linux64/LICENSE.chromedriver
+chromedriver-linux64/THIRD_PARTY_NOTICES.chromedriver
 check_permissions.sql
 
 ### STS ###

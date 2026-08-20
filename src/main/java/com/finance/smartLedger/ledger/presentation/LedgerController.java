@@ -13,9 +13,12 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.EnumMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -27,6 +30,8 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 @Tag(name = "Ledger Management", description = "APIs for managing ledger accounts and balances")
 public class LedgerController {
+
+  private static final String CURRENCY_PARAMETER = "ISO-4217 currency code, e.g. NGN";
 
   private final AccountService accountService;
   private final BalanceService balanceService;
@@ -186,71 +191,112 @@ public class LedgerController {
   @GetMapping("/balances/by-type")
   @Operation(
       summary = "Get balances by account type",
-      description = "Retrieves total balances grouped by account type")
+      description = "Retrieves total balances grouped by account type and currency")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<Map<AccountType, Money>>> getBalancesByType() {
-    Map<AccountType, Money> balances = balanceService.getBalancesByAccountType();
+  public ResponseEntity<ApiResponse<Map<AccountType, Map<String, BalanceResponse>>>>
+      getBalancesByType(
+          @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+          String currency) {
+    Map<AccountType, Map<String, BalanceResponse>> balances =
+        balanceService.getBalancesByAccountType().entrySet().stream()
+            .collect(
+                Collectors.toMap(
+                    Map.Entry::getKey,
+                    entry -> toBalanceResponses(entry.getValue(), currency),
+                    (first, second) -> first,
+                    () -> new EnumMap<>(AccountType.class)));
     return ResponseEntity.ok(ApiResponse.success(balances));
   }
 
   @GetMapping("/balances/assets")
   @Operation(
       summary = "Get total asset balance",
-      description = "Retrieves the total balance of all asset accounts")
+      description = "Retrieves the total balance of all asset accounts, per currency")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<BalanceResponse>> getTotalAssetBalance() {
-    Money balance = balanceService.getTotalAssetBalance();
-    return ResponseEntity.ok(ApiResponse.success(BalanceResponse.from(balance)));
+  public ResponseEntity<ApiResponse<Map<String, BalanceResponse>>> getTotalAssetBalance(
+      @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+      String currency) {
+    return totalBalanceResponse(AccountType.ASSET, currency);
   }
 
   @GetMapping("/balances/liabilities")
   @Operation(
       summary = "Get total liability balance",
-      description = "Retrieves the total balance of all liability accounts")
+      description = "Retrieves the total balance of all liability accounts, per currency")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<BalanceResponse>> getTotalLiabilityBalance() {
-    Money balance = balanceService.getTotalLiabilityBalance();
-    return ResponseEntity.ok(ApiResponse.success(BalanceResponse.from(balance)));
+  public ResponseEntity<ApiResponse<Map<String, BalanceResponse>>> getTotalLiabilityBalance(
+      @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+      String currency) {
+    return totalBalanceResponse(AccountType.LIABILITY, currency);
   }
 
   @GetMapping("/balances/equity")
   @Operation(
       summary = "Get total equity balance",
-      description = "Retrieves the total balance of all equity accounts")
+      description = "Retrieves the total balance of all equity accounts, per currency")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<BalanceResponse>> getTotalEquityBalance() {
-    Money balance = balanceService.getTotalEquityBalance();
-    return ResponseEntity.ok(ApiResponse.success(BalanceResponse.from(balance)));
+  public ResponseEntity<ApiResponse<Map<String, BalanceResponse>>> getTotalEquityBalance(
+      @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+      String currency) {
+    return totalBalanceResponse(AccountType.EQUITY, currency);
   }
 
   @GetMapping("/balances/revenue")
   @Operation(
       summary = "Get total revenue balance",
-      description = "Retrieves the total balance of all revenue accounts")
+      description = "Retrieves the total balance of all revenue accounts, per currency")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<BalanceResponse>> getTotalRevenueBalance() {
-    Money balance = balanceService.getTotalRevenueBalance();
-    return ResponseEntity.ok(ApiResponse.success(BalanceResponse.from(balance)));
+  public ResponseEntity<ApiResponse<Map<String, BalanceResponse>>> getTotalRevenueBalance(
+      @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+      String currency) {
+    return totalBalanceResponse(AccountType.REVENUE, currency);
   }
 
   @GetMapping("/balances/expenses")
   @Operation(
       summary = "Get total expense balance",
-      description = "Retrieves the total balance of all expense accounts")
+      description = "Retrieves the total balance of all expense accounts, per currency")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<BalanceResponse>> getTotalExpenseBalance() {
-    Money balance = balanceService.getTotalExpenseBalance();
-    return ResponseEntity.ok(ApiResponse.success(BalanceResponse.from(balance)));
+  public ResponseEntity<ApiResponse<Map<String, BalanceResponse>>> getTotalExpenseBalance(
+      @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+      String currency) {
+    return totalBalanceResponse(AccountType.EXPENSE, currency);
   }
 
   @GetMapping("/balances/net-income")
   @Operation(
       summary = "Get net income",
-      description = "Calculates and returns the net income (revenue - expenses)")
+      description = "Calculates and returns the net income (revenue - expenses) per currency")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<BalanceResponse>> getNetIncome() {
-    Money netIncome = balanceService.getNetIncome();
-    return ResponseEntity.ok(ApiResponse.success(BalanceResponse.from(netIncome)));
+  public ResponseEntity<ApiResponse<Map<String, BalanceResponse>>> getNetIncome(
+      @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+      String currency) {
+    Map<String, Money> netIncome =
+        currency == null
+            ? balanceService.getNetIncomeByCurrency()
+            : Map.of(currency, balanceService.getNetIncome(currency));
+    return ResponseEntity.ok(ApiResponse.success(toBalanceResponses(netIncome, null)));
+  }
+
+  private ResponseEntity<ApiResponse<Map<String, BalanceResponse>>> totalBalanceResponse(
+      AccountType accountType, String currency) {
+    Map<String, Money> totals =
+        currency == null
+            ? balanceService.getTotalBalanceByCurrency(accountType)
+            : Map.of(currency, balanceService.getTotalBalance(accountType, currency));
+    return ResponseEntity.ok(ApiResponse.success(toBalanceResponses(totals, null)));
+  }
+
+  private static Map<String, BalanceResponse> toBalanceResponses(
+      Map<String, Money> balances, String currency) {
+    return balances.entrySet().stream()
+        .filter(entry -> currency == null || entry.getKey().equals(currency))
+        .collect(
+            Collectors.toMap(
+                Map.Entry::getKey,
+                entry -> BalanceResponse.from(entry.getValue()),
+                (first, second) -> first,
+                LinkedHashMap::new));
   }
 
   @PatchMapping("/accounts/{id}/balance/adjust")
@@ -295,20 +341,34 @@ public class LedgerController {
   @GetMapping("/balances/trial-balance")
   @Operation(
       summary = "Calculate trial balance",
-      description = "Calculates the trial balance difference (should be zero)")
+      description =
+          "Calculates the trial balance difference per currency (each should be zero). "
+              + "Pass 'currency' to restrict the result to a single ISO-4217 currency.")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<BalanceResponse>> calculateTrialBalance() {
-    Money difference = balanceService.calculateTrialBalance();
-    return ResponseEntity.ok(ApiResponse.success(BalanceResponse.from(difference)));
+  public ResponseEntity<ApiResponse<Map<String, BalanceResponse>>> calculateTrialBalance(
+      @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+      String currency) {
+    Map<String, Money> differences =
+        currency == null
+            ? balanceService.calculateTrialBalanceByCurrency()
+            : Map.of(currency, balanceService.calculateTrialBalance(currency));
+    return ResponseEntity.ok(ApiResponse.success(toBalanceResponses(differences, null)));
   }
 
   @GetMapping("/balances/trial-balanced")
   @Operation(
       summary = "Check if trial balance is balanced",
-      description = "Returns true if trial balance is balanced")
+      description =
+          "Returns true if the trial balance is balanced for every currency, or for the given "
+              + "currency when 'currency' is supplied")
   @PreAuthorize("hasAuthority('LEDGER:READ')")
-  public ResponseEntity<ApiResponse<Boolean>> isTrialBalanceBalanced() {
-    boolean balanced = balanceService.isTrialBalanceBalanced();
+  public ResponseEntity<ApiResponse<Boolean>> isTrialBalanceBalanced(
+      @Parameter(description = CURRENCY_PARAMETER) @RequestParam(required = false)
+      String currency) {
+    boolean balanced =
+        currency == null
+            ? balanceService.isTrialBalanceBalanced()
+            : balanceService.isTrialBalanceBalanced(currency);
     return ResponseEntity.ok(ApiResponse.success(balanced));
   }
 

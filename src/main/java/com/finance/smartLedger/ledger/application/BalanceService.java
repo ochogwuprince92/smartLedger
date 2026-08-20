@@ -6,11 +6,13 @@ import com.finance.smartLedger.ledger.domain.valueobject.AccountBalance;
 import com.finance.smartLedger.ledger.infrastructure.persistence.AccountRepository;
 import com.finance.smartLedger.shared.valueobject.Money;
 import jakarta.transaction.Transactional;
-import java.math.BigDecimal;
+import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -38,64 +40,61 @@ public class BalanceService {
     return account.getBalance();
   }
 
-  public Map<AccountType, Money> getBalancesByAccountType() {
-    List<Account> accounts = accountRepository.findAll();
+  /** Totals per account type, split by currency so balances are never summed across currencies. */
+  public Map<AccountType, Map<String, Money>> getBalancesByAccountType() {
+    Map<AccountType, Map<String, Money>> balances = new EnumMap<>(AccountType.class);
 
-    return accounts.stream()
-        .collect(
-            Collectors.groupingBy(
-                Account::getAccountType,
-                Collectors.reducing(
-                    Money.zero("USD"),
-                    account -> account.getBalance().getCurrentBalance(),
-                    Money::add)));
+    for (Account account : accountRepository.findAll()) {
+      Money balance = account.getBalance().getCurrentBalance();
+      balances
+          .computeIfAbsent(account.getAccountType(), accountType -> new TreeMap<>())
+          .merge(balance.getCurrencyCode(), balance, Money::add);
+    }
+
+    return balances;
   }
 
-  public Money getTotalAssetBalance() {
-    List<Account> assetAccounts = accountRepository.findByAccountType(AccountType.ASSET);
+  /** Total balance of all accounts of the given type, per currency. */
+  public Map<String, Money> getTotalBalanceByCurrency(AccountType accountType) {
+    Map<String, Money> totals = new TreeMap<>();
 
-    return assetAccounts.stream()
-        .map(account -> account.getBalance().getCurrentBalance())
-        .reduce(Money.zero("USD"), Money::add);
+    for (Account account : accountRepository.findByAccountType(accountType)) {
+      Money balance = account.getBalance().getCurrentBalance();
+      totals.merge(balance.getCurrencyCode(), balance, Money::add);
+    }
+
+    return totals;
   }
 
-  public Money getTotalLiabilityBalance() {
-    List<Account> liabilityAccounts = accountRepository.findByAccountType(AccountType.LIABILITY);
-
-    return liabilityAccounts.stream()
-        .map(account -> account.getBalance().getCurrentBalance())
-        .reduce(Money.zero("USD"), Money::add);
+  public Money getTotalBalance(AccountType accountType, String currencyCode) {
+    Money zero = Money.zero(currencyCode);
+    return getTotalBalanceByCurrency(accountType).getOrDefault(currencyCode, zero);
   }
 
-  public Money getTotalEquityBalance() {
-    List<Account> equityAccounts = accountRepository.findByAccountType(AccountType.EQUITY);
+  /** Net income (revenue - expenses) per currency. */
+  public Map<String, Money> getNetIncomeByCurrency() {
+    Map<String, Money> revenues = getTotalBalanceByCurrency(AccountType.REVENUE);
+    Map<String, Money> expenses = getTotalBalanceByCurrency(AccountType.EXPENSE);
 
-    return equityAccounts.stream()
-        .map(account -> account.getBalance().getCurrentBalance())
-        .reduce(Money.zero("USD"), Money::add);
+    Map<String, Money> netIncome = new TreeMap<>();
+    Stream.concat(revenues.keySet().stream(), expenses.keySet().stream())
+        .distinct()
+        .forEach(
+            currencyCode -> {
+              Money zero = Money.zero(currencyCode);
+              netIncome.put(
+                  currencyCode,
+                  revenues
+                      .getOrDefault(currencyCode, zero)
+                      .subtract(expenses.getOrDefault(currencyCode, zero)));
+            });
+
+    return netIncome;
   }
 
-  public Money getTotalRevenueBalance() {
-    List<Account> revenueAccounts = accountRepository.findByAccountType(AccountType.REVENUE);
-
-    return revenueAccounts.stream()
-        .map(account -> account.getBalance().getCurrentBalance())
-        .reduce(Money.zero("USD"), Money::add);
-  }
-
-  public Money getTotalExpenseBalance() {
-    List<Account> expenseAccounts = accountRepository.findByAccountType(AccountType.EXPENSE);
-
-    return expenseAccounts.stream()
-        .map(account -> account.getBalance().getCurrentBalance())
-        .reduce(Money.zero("USD"), Money::add);
-  }
-
-  public Money getNetIncome() {
-    Money totalRevenue = getTotalRevenueBalance();
-    Money totalExpense = getTotalExpenseBalance();
-
-    return totalRevenue.subtract(totalExpense);
+  public Money getNetIncome(String currencyCode) {
+    Money zero = Money.zero(currencyCode);
+    return getNetIncomeByCurrency().getOrDefault(currencyCode, zero);
   }
 
   @Transactional
@@ -166,29 +165,49 @@ public class BalanceService {
     accountRepository.save(toAccount);
   }
 
-  public Money calculateTrialBalance() {
-    Money totalDebits = Money.zero("USD");
-    Money totalCredits = Money.zero("USD");
+  /**
+   * Calculates the trial balance difference (debits - credits) for every currency in the ledger.
+   * A trial balance only balances within a single currency, so balances are never summed across
+   * currencies.
+   */
+  public Map<String, Money> calculateTrialBalanceByCurrency() {
+    Map<String, Money> debits = new TreeMap<>();
+    Map<String, Money> credits = new TreeMap<>();
 
-    List<Account> allAccounts = accountRepository.findAll();
-
-    for (Account account : allAccounts) {
+    for (Account account : accountRepository.findAll()) {
       Money balance = account.getBalance().getCurrentBalance();
-
-      if (account.getAccountType().isDebitAccount()) {
-        totalDebits = totalDebits.add(balance);
-      } else {
-        totalCredits = totalCredits.add(balance);
-      }
+      Map<String, Money> target =
+          account.getAccountType().isDebitAccount() ? debits : credits;
+      target.merge(balance.getCurrencyCode(), balance, Money::add);
     }
 
-    // Trial balance should be zero (debits = credits)
-    return totalDebits.subtract(totalCredits);
+    Map<String, Money> differences = new TreeMap<>();
+    Stream.concat(debits.keySet().stream(), credits.keySet().stream())
+        .distinct()
+        .forEach(
+            currencyCode -> {
+              Money zero = Money.zero(currencyCode);
+              differences.put(
+                  currencyCode,
+                  debits
+                      .getOrDefault(currencyCode, zero)
+                      .subtract(credits.getOrDefault(currencyCode, zero)));
+            });
+
+    return differences;
+  }
+
+  public Money calculateTrialBalance(String currencyCode) {
+    Money zero = Money.zero(currencyCode);
+    return calculateTrialBalanceByCurrency().getOrDefault(currencyCode, zero);
   }
 
   public boolean isTrialBalanceBalanced() {
-    Money difference = calculateTrialBalance();
-    return difference.getAmount().compareTo(BigDecimal.ZERO) == 0;
+    return calculateTrialBalanceByCurrency().values().stream().allMatch(Money::isZero);
+  }
+
+  public boolean isTrialBalanceBalanced(String currencyCode) {
+    return calculateTrialBalance(currencyCode).isZero();
   }
 
   public List<Account> getAccountsWithNegativeBalance() {

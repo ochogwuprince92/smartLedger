@@ -81,11 +81,12 @@ class BalanceServiceTest {
   void getBalancesByAccountType_Success() {
     when(accountRepository.findAll()).thenReturn(List.of(testAccount));
 
-    Map<AccountType, Money> balances = balanceService.getBalancesByAccountType();
+    Map<AccountType, Map<String, Money>> balances = balanceService.getBalancesByAccountType();
 
     assertNotNull(balances);
     assertFalse(balances.isEmpty());
-    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), balances.get(AccountType.ASSET));
+    assertEquals(
+        Money.of(BigDecimal.valueOf(1000.00), "USD"), balances.get(AccountType.ASSET).get("USD"));
     verify(accountRepository).findAll();
   }
 
@@ -93,7 +94,7 @@ class BalanceServiceTest {
   void getTotalAssetBalance_Success() {
     when(accountRepository.findByAccountType(AccountType.ASSET)).thenReturn(List.of(testAccount));
 
-    Money total = balanceService.getTotalAssetBalance();
+    Money total = balanceService.getTotalBalance(AccountType.ASSET, "USD");
 
     assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.ASSET);
@@ -104,7 +105,7 @@ class BalanceServiceTest {
     when(accountRepository.findByAccountType(AccountType.LIABILITY))
         .thenReturn(List.of(testAccount));
 
-    Money total = balanceService.getTotalLiabilityBalance();
+    Money total = balanceService.getTotalBalance(AccountType.LIABILITY, "USD");
 
     assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.LIABILITY);
@@ -114,7 +115,7 @@ class BalanceServiceTest {
   void getTotalEquityBalance_Success() {
     when(accountRepository.findByAccountType(AccountType.EQUITY)).thenReturn(List.of(testAccount));
 
-    Money total = balanceService.getTotalEquityBalance();
+    Money total = balanceService.getTotalBalance(AccountType.EQUITY, "USD");
 
     assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.EQUITY);
@@ -124,7 +125,7 @@ class BalanceServiceTest {
   void getTotalRevenueBalance_Success() {
     when(accountRepository.findByAccountType(AccountType.REVENUE)).thenReturn(List.of(testAccount));
 
-    Money total = balanceService.getTotalRevenueBalance();
+    Money total = balanceService.getTotalBalance(AccountType.REVENUE, "USD");
 
     assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.REVENUE);
@@ -134,7 +135,7 @@ class BalanceServiceTest {
   void getTotalExpenseBalance_Success() {
     when(accountRepository.findByAccountType(AccountType.EXPENSE)).thenReturn(List.of(testAccount));
 
-    Money total = balanceService.getTotalExpenseBalance();
+    Money total = balanceService.getTotalBalance(AccountType.EXPENSE, "USD");
 
     assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), total);
     verify(accountRepository).findByAccountType(AccountType.EXPENSE);
@@ -145,9 +146,29 @@ class BalanceServiceTest {
     when(accountRepository.findByAccountType(AccountType.REVENUE)).thenReturn(List.of(testAccount));
     when(accountRepository.findByAccountType(AccountType.EXPENSE)).thenReturn(List.of());
 
-    Money netIncome = balanceService.getNetIncome();
+    Money netIncome = balanceService.getNetIncome("USD");
 
     assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), netIncome);
+  }
+
+  @Test
+  void getTotalBalanceByCurrency_SeparatesCurrencies() {
+    Account ngnAsset = Account.builder()
+        .accountName("NGN Asset Account")
+        .accountType(AccountType.ASSET)
+        .isActive(true)
+        .build();
+    ngnAsset.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        Money.of(BigDecimal.valueOf(100000.00), "NGN")));
+
+    when(accountRepository.findByAccountType(AccountType.ASSET))
+        .thenReturn(List.of(testAccount, ngnAsset));
+
+    Map<String, Money> totals = balanceService.getTotalBalanceByCurrency(AccountType.ASSET);
+
+    assertEquals(java.util.Set.of("NGN", "USD"), totals.keySet());
+    assertEquals(Money.of(BigDecimal.valueOf(1000.00), "USD"), totals.get("USD"));
+    assertEquals(Money.of(BigDecimal.valueOf(100000.00), "NGN"), totals.get("NGN"));
   }
 
   @Test
@@ -273,11 +294,59 @@ class BalanceServiceTest {
 
     when(accountRepository.findAll()).thenReturn(List.of(assetAccount, liabilityAccount));
 
-    Money difference = balanceService.calculateTrialBalance();
+    Money difference = balanceService.calculateTrialBalance("USD");
 
     // Trial balance should be zero when debits equal credits
     assertTrue(difference.isZero());
     verify(accountRepository).findAll();
+  }
+
+  @Test
+  void calculateTrialBalanceByCurrency_SeparatesCurrencies() {
+    Account usdAsset = Account.builder()
+        .accountName("USD Asset Account")
+        .accountType(AccountType.ASSET)
+        .isActive(true)
+        .build();
+    usdAsset.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(1000.00), "USD")));
+
+    Account usdLiability = Account.builder()
+        .accountName("USD Liability Account")
+        .accountType(AccountType.LIABILITY)
+        .isActive(true)
+        .build();
+    usdLiability.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(1000.00), "USD")));
+
+    Account ngnAsset = Account.builder()
+        .accountName("NGN Asset Account")
+        .accountType(AccountType.ASSET)
+        .isActive(true)
+        .build();
+    ngnAsset.setBalance(new com.finance.smartLedger.ledger.domain.valueobject.AccountBalance(
+        com.finance.smartLedger.shared.valueobject.Money.of(java.math.BigDecimal.valueOf(100000.00), "NGN")));
+
+    when(accountRepository.findAll()).thenReturn(List.of(usdAsset, usdLiability, ngnAsset));
+
+    java.util.Map<String, Money> differences = balanceService.calculateTrialBalanceByCurrency();
+
+    assertEquals(java.util.Set.of("NGN", "USD"), differences.keySet());
+    assertTrue(differences.get("USD").isZero());
+    assertEquals(0, differences.get("NGN").getAmount().compareTo(java.math.BigDecimal.valueOf(100000.00)));
+    assertEquals("NGN", differences.get("NGN").getCurrencyCode());
+    assertFalse(balanceService.isTrialBalanceBalanced());
+    assertTrue(balanceService.isTrialBalanceBalanced("USD"));
+  }
+
+  @Test
+  void calculateTrialBalance_UnknownCurrency_ReturnsZero() {
+    when(accountRepository.findAll()).thenReturn(List.of());
+
+    Money difference = balanceService.calculateTrialBalance("EUR");
+
+    assertTrue(difference.isZero());
+    assertEquals("EUR", difference.getCurrencyCode());
   }
 
   @Test

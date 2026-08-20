@@ -123,54 +123,59 @@ class BalanceServiceIntegrationTest {
 
   @Test
   void getBalancesByAccountType_Success() {
-    Map<AccountType, Money> balances = balanceService.getBalancesByAccountType();
+    Map<AccountType, Map<String, Money>> balances = balanceService.getBalancesByAccountType();
 
     assertEquals(5, balances.size());
-    assertEquals(BigDecimal.valueOf(10000.00), balances.get(AccountType.ASSET).getAmount());
-    assertEquals(BigDecimal.valueOf(5000.00), balances.get(AccountType.LIABILITY).getAmount());
-    assertEquals(BigDecimal.valueOf(5000.00), balances.get(AccountType.EQUITY).getAmount());
-    assertEquals(BigDecimal.valueOf(15000.00), balances.get(AccountType.REVENUE).getAmount());
-    assertEquals(BigDecimal.valueOf(8000.00), balances.get(AccountType.EXPENSE).getAmount());
+    assertEquals(
+        BigDecimal.valueOf(10000.00), balances.get(AccountType.ASSET).get("USD").getAmount());
+    assertEquals(
+        BigDecimal.valueOf(5000.00), balances.get(AccountType.LIABILITY).get("USD").getAmount());
+    assertEquals(
+        BigDecimal.valueOf(5000.00), balances.get(AccountType.EQUITY).get("USD").getAmount());
+    assertEquals(
+        BigDecimal.valueOf(15000.00), balances.get(AccountType.REVENUE).get("USD").getAmount());
+    assertEquals(
+        BigDecimal.valueOf(8000.00), balances.get(AccountType.EXPENSE).get("USD").getAmount());
   }
 
   @Test
   void getTotalAssetBalance_Success() {
-    Money totalAssets = balanceService.getTotalAssetBalance();
+    Money totalAssets = balanceService.getTotalBalance(AccountType.ASSET, "USD");
 
     assertEquals(BigDecimal.valueOf(10000.00), totalAssets.getAmount());
   }
 
   @Test
   void getTotalLiabilityBalance_Success() {
-    Money totalLiabilities = balanceService.getTotalLiabilityBalance();
+    Money totalLiabilities = balanceService.getTotalBalance(AccountType.LIABILITY, "USD");
 
     assertEquals(BigDecimal.valueOf(5000.00), totalLiabilities.getAmount());
   }
 
   @Test
   void getTotalEquityBalance_Success() {
-    Money totalEquity = balanceService.getTotalEquityBalance();
+    Money totalEquity = balanceService.getTotalBalance(AccountType.EQUITY, "USD");
 
     assertEquals(BigDecimal.valueOf(5000.00), totalEquity.getAmount());
   }
 
   @Test
   void getTotalRevenueBalance_Success() {
-    Money totalRevenue = balanceService.getTotalRevenueBalance();
+    Money totalRevenue = balanceService.getTotalBalance(AccountType.REVENUE, "USD");
 
     assertEquals(BigDecimal.valueOf(15000.00), totalRevenue.getAmount());
   }
 
   @Test
   void getTotalExpenseBalance_Success() {
-    Money totalExpenses = balanceService.getTotalExpenseBalance();
+    Money totalExpenses = balanceService.getTotalBalance(AccountType.EXPENSE, "USD");
 
     assertEquals(BigDecimal.valueOf(8000.00), totalExpenses.getAmount());
   }
 
   @Test
   void getNetIncome_Success() {
-    Money netIncome = balanceService.getNetIncome();
+    Money netIncome = balanceService.getNetIncome("USD");
 
     assertEquals(BigDecimal.valueOf(7000.00), netIncome.getAmount()); // 15000 - 8000
   }
@@ -241,7 +246,7 @@ class BalanceServiceIntegrationTest {
 
   @Test
   void calculateTrialBalance_Success() {
-    Money difference = balanceService.calculateTrialBalance();
+    Money difference = balanceService.calculateTrialBalance("USD");
 
     // In a balanced system, this should be zero
     assertEquals(BigDecimal.ZERO, difference.getAmount());

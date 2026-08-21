@@ -54,7 +54,8 @@ public class WebSecurityConfig {
                         "/swagger-ui/**",
                         "/swagger-ui.html",
                         "/api/payment/callback/**",
-                        "/api/payment/webhook/**")
+                        "/api/payment/webhook/**",
+                        "/api/v1/ai-insights/callback")
                     .permitAll()
                     .anyRequest()
                     .authenticated())

@@ -110,21 +110,7 @@ public class AIInsightService {
     AIInsight insight =
         aiInsightRepository
             .findByRequestId(callback.getRequestId())
-            .orElseGet(() -> {
-              // For testing: create insight if it doesn't exist
-              log.warn("AI Insight not found for requestId: {}, creating new one for testing", callback.getRequestId());
-              AIInsight newInsight = AIInsight.builder()
-                  .requestId(callback.getRequestId())
-                  .reconciliationId(callback.getReconciliationId())
-                  .insightType(AIInsightType.RECONCILIATION)
-                  .status(InsightStatus.PENDING)
-                  .requestedAt(LocalDateTime.now())
-                  .retryCount(0)
-                  .maxRetries(3)
-                  .build();
-              newInsight.setCreatedBy("system");
-              return aiInsightRepository.save(newInsight);
-            });
+            .orElseThrow(() -> new IllegalArgumentException("AI Insight not found for requestId: " + callback.getRequestId()));
 
     try {
       String recommendationsJson = objectMapper.writeValueAsString(callback.getRecommendations());

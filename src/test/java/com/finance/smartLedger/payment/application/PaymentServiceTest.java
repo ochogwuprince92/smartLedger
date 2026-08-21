@@ -126,7 +126,7 @@ class PaymentServiceTest {
             any(String.class),
             eq(CREATED_BY));
     // Verify gateway was NOT called for BANK_TRANSFER
-    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any());
+    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any(), any());
   }
 
   @Test
@@ -167,7 +167,8 @@ class PaymentServiceTest {
             eq(description),
             eq(PAYER_EMAIL),
             eq(PAYER_NAME),
-            any()))
+            any(),
+            eq(callbackUrl)))
         .thenReturn(gatewayResult);
 
     // When
@@ -195,7 +196,8 @@ class PaymentServiceTest {
             eq(description),
             eq(PAYER_EMAIL),
             eq(PAYER_NAME),
-            any());
+            any(),
+            eq(callbackUrl));
     assertNotNull(result);
     assertEquals(PAYMENT_NUMBER, result.getPaymentNumber());
   }
@@ -219,7 +221,8 @@ class PaymentServiceTest {
             eq(description),
             eq(PAYER_EMAIL),
             eq(PAYER_NAME),
-            any()))
+            any(),
+            eq(callbackUrl)))
         .thenThrow(new RuntimeException("Gateway unreachable"));
 
     // When & Then
@@ -250,7 +253,8 @@ class PaymentServiceTest {
             eq(description),
             eq(PAYER_EMAIL),
             eq(PAYER_NAME),
-            any());
+            any(),
+            eq(callbackUrl));
     // Verify payment was NOT saved when gateway failed
     verify(paymentRepository, never()).save(any(Payment.class));
   }
@@ -321,7 +325,8 @@ class PaymentServiceTest {
             any(String.class),
             any(String.class),
             any(String.class),
-            any(Map.class));
+            any(Map.class),
+            any(String.class));
     // Verify existing payment was returned, not saved again
     verify(paymentRepository, never()).save(any(Payment.class));
   }
@@ -856,6 +861,81 @@ class PaymentServiceTest {
             any(String.class),
             eq(CREATED_BY));
     // Verify gateway was NOT called for BANK_TRANSFER
-    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any());
+    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any(), any());
+  }
+
+  @Test
+  void testCreatePayment_CallbackUrl_PassedToPaystackGateway() {
+    // Given
+    LocalDateTime paymentDate = LocalDateTime.now();
+    PaymentMethod paymentMethod = PaymentMethod.PAYSTACK;
+    BigDecimal amount = new BigDecimal("100.00");
+    String currencyCode = "USD";
+    String description = "School fees payment";
+    String callbackUrl = "https://custom-callback.example.com/payment/callback";
+
+    Payment expectedPayment =
+        new Payment(
+            PAYMENT_NUMBER,
+            null,
+            null,
+            paymentDate,
+            paymentMethod,
+            amount,
+            currencyCode,
+            PAYER_NAME,
+            PAYER_EMAIL,
+            description,
+            CREATED_BY);
+    expectedPayment.setPayerPhone(PAYER_PHONE);
+
+    PaystackInitiationResult gatewayResult =
+        new PaystackInitiationResult("REF-12345", "https://paystack.co/checkout/REF-12345", "ACCESS_CODE_12345");
+
+    when(paymentRepository.existsByPaymentNumber(PAYMENT_NUMBER)).thenReturn(false);
+    when(paymentRepository.save(any(Payment.class))).thenReturn(expectedPayment);
+    
+    // Stub gateway client with specific callbackUrl assertion
+    when(paymentGatewayClient.initiatePayment(
+            eq(amount),
+            eq(currencyCode),
+            eq(description),
+            eq(PAYER_EMAIL),
+            eq(PAYER_NAME),
+            any(),
+            eq(callbackUrl)))
+        .thenReturn(gatewayResult);
+
+    // When
+    Payment result =
+        paymentService.createPayment(
+            PAYMENT_NUMBER,
+            null,
+            null,
+            paymentDate,
+            paymentMethod,
+            amount,
+            currencyCode,
+            PAYER_NAME,
+            PAYER_EMAIL,
+            PAYER_PHONE,
+            description,
+            callbackUrl,
+            CREATED_BY);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(PAYMENT_NUMBER, result.getPaymentNumber());
+    
+    // Verify callbackUrl was passed to Paystack gateway
+    verify(paymentGatewayClient, times(1))
+        .initiatePayment(
+            eq(amount),
+            eq(currencyCode),
+            eq(description),
+            eq(PAYER_EMAIL),
+            eq(PAYER_NAME),
+            any(),
+            eq(callbackUrl));
   }
 }

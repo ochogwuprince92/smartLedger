@@ -101,7 +101,7 @@ class PaymentChainIntegrationTest {
     }
 
     // Verify Paystack client was NEVER called
-    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any());
+    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any(), any());
   }
 
   @Test
@@ -134,7 +134,7 @@ class PaymentChainIntegrationTest {
     }
 
     // Verify Paystack client was NEVER called
-    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any());
+    verify(paymentGatewayClient, never()).initiatePayment(any(), any(), any(), any(), any(), any(), any());
   }
 
   @Test
@@ -142,7 +142,7 @@ class PaymentChainIntegrationTest {
     // Test that Paystack initiation failure is handled cleanly without leaving ambiguous PENDING state
     
     // Mock Paystack initiation to throw exception
-    when(paymentGatewayClient.initiatePayment(any(), any(), any(), any(), any(), any()))
+    when(paymentGatewayClient.initiatePayment(any(), any(), any(), any(), any(), any(), any()))
         .thenThrow(new RuntimeException("Paystack service unavailable"));
 
     try {
@@ -180,7 +180,7 @@ class PaymentChainIntegrationTest {
         "https://paystack.co/pay/donation123",
         "ACCESS_CODE_DONATION"
     );
-    when(paymentGatewayClient.initiatePayment(any(), any(), any(), any(), any(), any()))
+    when(paymentGatewayClient.initiatePayment(any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(mockResult);
     
     // Mock the payment repository to return a payment with gateway values set
@@ -230,7 +230,7 @@ class PaymentChainIntegrationTest {
     assertEquals("https://paystack.co/pay/donation123", payment.getAuthorizationUrl());
 
     // Verify Paystack client was called
-    verify(paymentGatewayClient, times(1)).initiatePayment(any(), any(), any(), any(), any(), any());
+    verify(paymentGatewayClient, times(1)).initiatePayment(any(), any(), any(), any(), any(), any(), any());
   }
 
   @Test
@@ -243,7 +243,7 @@ class PaymentChainIntegrationTest {
         "https://paystack.co/pay/valid123",
         "ACCESS_CODE_VALID"
     );
-    when(paymentGatewayClient.initiatePayment(any(), any(), any(), any(), any(), any()))
+    when(paymentGatewayClient.initiatePayment(any(), any(), any(), any(), any(), any(), any()))
         .thenReturn(mockResult);
     
     // Mock the payment repository to return a payment with gateway values set
@@ -293,6 +293,6 @@ class PaymentChainIntegrationTest {
     assertEquals("https://paystack.co/pay/valid123", payment.getAuthorizationUrl());
 
     // Verify Paystack client was called exactly once
-    verify(paymentGatewayClient, times(1)).initiatePayment(any(), any(), any(), any(), any(), any());
+    verify(paymentGatewayClient, times(1)).initiatePayment(any(), any(), any(), any(), any(), any(), any());
   }
 }

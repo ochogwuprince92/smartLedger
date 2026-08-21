@@ -1,5 +1,6 @@
 package com.finance.smartLedger.ai.presentation;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.finance.smartLedger.ai.application.dto.AICallbackRequest;
 import com.finance.smartLedger.ai.application.dto.AICallbackResponse;
 import com.finance.smartLedger.ai.domain.AIInsight;
@@ -30,6 +31,7 @@ public class AIInsightController {
 
   private final com.finance.smartLedger.ai.application.AIInsightService aiInsightService;
   private final HmacSignatureUtil hmacSignatureUtil;
+  private final ObjectMapper objectMapper;
 
   @Value("${n8n.callback-secret}")
   private String callbackSecret;
@@ -38,8 +40,8 @@ public class AIInsightController {
   @Operation(summary = "AI insight callback", description = "Callback endpoint for n8n to return AI insights")
   public ResponseEntity<AICallbackResponse> handleCallback(@RequestBody AICallbackRequest request) {
     try {
-      // Verify HMAC signature
-      String payload = request.toString(); // Simplified - should serialize properly
+      // Verify HMAC signature - properly serialize to JSON
+      String payload = objectMapper.writeValueAsString(request);
       if (!hmacSignatureUtil.verifySignature(payload, request.getSignature(), callbackSecret)) {
         log.warn("Invalid HMAC signature for callback: requestId={}", request.getRequestId());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

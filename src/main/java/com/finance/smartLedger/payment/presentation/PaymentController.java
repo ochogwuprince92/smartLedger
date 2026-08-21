@@ -178,14 +178,23 @@ public class PaymentController {
         return ResponseEntity.ok(ApiResponse.success("Payment verified", response));
       } catch (IllegalArgumentException e) {
         // Payment not found - still acknowledge callback
+        log.warn("Payment callback received for non-existent payment reference: {}", paymentReference);
         response.put("reference", paymentReference);
         response.put("message", "Payment callback received but payment not found. Status will be updated via webhook.");
         response.put("status", "pending_webhook");
         return ResponseEntity.ok(ApiResponse.success("Callback received", response));
-      } catch (Exception e) {
-        log.error("Error processing payment callback for reference: {}", paymentReference, e);
+      } catch (org.springframework.dao.DataIntegrityViolationException e) {
+        // Database constraint violation - this will NOT be fixed by webhook retry
+        log.error("Database constraint violation during payment callback for reference: {}. Payment completion failed and will NOT be retried by webhook. Error: {}", paymentReference, e.getMessage(), e);
         response.put("reference", paymentReference);
-        response.put("message", "Payment callback received but verification failed. Status will be updated via webhook.");
+        response.put("message", "Payment verification failed due to database constraint violation. Manual intervention required.");
+        response.put("status", "database_error");
+        return ResponseEntity.status(500).body(ApiResponse.<Map<String, Object>>error("Database constraint violation"));
+      } catch (Exception e) {
+        // Generic error - log with full details including payment reference
+        log.error("Unexpected error processing payment callback for reference: {}. Payment completion failed. Error: {}", paymentReference, e.getMessage(), e);
+        response.put("reference", paymentReference);
+        response.put("message", "Payment callback received but verification failed. Status will be updated via webhook if this is a transient error.");
         response.put("status", "verification_failed");
         return ResponseEntity.ok(ApiResponse.success("Callback received with error", response));
       }

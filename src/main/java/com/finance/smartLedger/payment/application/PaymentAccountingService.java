@@ -48,6 +48,11 @@ public class PaymentAccountingService {
             .referenceNumber(payment.getPaymentNumber())
             .build();
 
+    // Set audit fields
+    String auditUser = payment.getUpdatedBy() != null ? payment.getUpdatedBy() : "system";
+    transaction.setCreatedBy(auditUser);
+    transaction.setUpdatedBy(auditUser);
+
     return transactionRepository.save(transaction);
   }
 
@@ -80,6 +85,11 @@ public class PaymentAccountingService {
             .creditAccount(cashAccount)
             .referenceNumber(payment.getPaymentNumber())
             .build();
+
+    // Set audit fields
+    String auditUser = payment.getUpdatedBy() != null ? payment.getUpdatedBy() : "system";
+    transaction.setCreatedBy(auditUser);
+    transaction.setUpdatedBy(auditUser);
 
     return transactionRepository.save(transaction);
   }

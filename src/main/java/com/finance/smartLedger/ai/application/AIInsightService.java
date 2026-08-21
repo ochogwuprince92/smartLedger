@@ -121,6 +121,7 @@ public class AIInsightService {
                   .requestedAt(LocalDateTime.now())
                   .retryCount(0)
                   .maxRetries(3)
+                  .metadata("{}")
                   .build();
               newInsight.setCreatedBy("system");
               return aiInsightRepository.save(newInsight);

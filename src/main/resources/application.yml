@@ -99,8 +99,8 @@ n8n:
 payment:
   gateway:
     paystack:
-      secret-key: ${PAYSTACK_SECRET_KEY:}
-      public-key: ${PAYSTACK_PUBLIC_KEY:}
-      callback-url: ${PAYSTACK_CALLBACK_URL:http://localhost:8081/api/payment/callback/paystack}
-      webhook-url: ${PAYSTACK_WEBHOOK_URL:http://localhost:8081/api/payment/webhook/paystack}
+      secret-key: ${PAYSTACK_SECRET_KEY}
+      public-key: ${PAYSTACK_PUBLIC_KEY}
+      callback-url: ${PAYSTACK_CALLBACK_URL}
+      webhook-url: ${PAYSTACK_WEBHOOK_URL}
       api-url: ${PAYSTACK_API_URL:https://api.paystack.co}

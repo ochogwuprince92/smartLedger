@@ -107,11 +107,11 @@ public class PaymentAccountingService {
 
   private String getCashAccountCode(PaymentMethod paymentMethod) {
     return switch (paymentMethod) {
-      case PAYSTACK -> "CASH_PS";
-      case BANK_TRANSFER -> "CASH_BT";
-      case USSD -> "CASH_USSD";
-      case CARD -> "CASH_CARD";
-      case QR_CODE -> "CASH_QR";
+      case PAYSTACK -> "CASH01";
+      case BANK_TRANSFER -> "CASH02";
+      case USSD -> "CASH03";
+      case CARD -> "CASH04";
+      case QR_CODE -> "CASH05";
     };
   }
 
@@ -126,7 +126,7 @@ public class PaymentAccountingService {
   }
 
   private Account getAccountsReceivableAccount() {
-    Optional<Account> arAccount = accountRepository.findByAccountCode_Value("AR01");
+    Optional<Account> arAccount = accountRepository.findByAccountCode_Value("AR001");
 
     if (arAccount.isPresent()) {
       return arAccount.get();
@@ -134,7 +134,7 @@ public class PaymentAccountingService {
 
     Account newAccount =
         Account.builder()
-            .accountCode(AccountCode.of("AR01"))
+            .accountCode(AccountCode.of("AR001"))
             .accountName("Accounts Receivable")
             .accountType(AccountType.ASSET)
             .description("Accounts receivable for general payments")

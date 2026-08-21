@@ -63,14 +63,20 @@ public class PaymentWebhookHandler {
       String gatewayType,
       String gatewayReference) {
     return switch (eventType.toLowerCase()) {
-      case "charge.success", "payment.success" ->
-          paymentService.completePayment(
-              payment.getId(),
-              payment.getGatewayTransactionId(),
-              gatewayReference,
-              extractResponseCode(jsonNode, gatewayType),
-              extractResponseMessage(jsonNode, gatewayType),
-              "webhook");
+      case "charge.success", "payment.success" -> {
+        // First process the payment if it's still pending
+        if (payment.getStatus().name().equals("PENDING")) {
+          paymentService.processPayment(payment.getId(), "webhook");
+        }
+        // Then complete it
+        yield paymentService.completePayment(
+            payment.getId(),
+            payment.getGatewayTransactionId(),
+            gatewayReference,
+            extractResponseCode(jsonNode, gatewayType),
+            extractResponseMessage(jsonNode, gatewayType),
+            "webhook");
+      }
       case "charge.failed", "payment.failed" ->
           paymentService.failPayment(
               payment.getId(),

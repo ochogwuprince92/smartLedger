@@ -66,10 +66,16 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
       HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);
       Map<String, Object> response = restTemplate.postForObject(url, request, Map.class);
 
-      Map<String, Object> data = (Map<String, Object>) response.get("data");
-      String reference = (String) data.get("reference");
-      String authorizationUrl = (String) data.get("authorization_url");
-      String accessCode = (String) data.get("access_code");
+      Object dataObj = response.get("data");
+      if (!(dataObj instanceof Map)) {
+        log.error("Payment initiation data is not a Map: {}", dataObj.getClass().getName());
+        throw new RuntimeException("Failed to initiate payment with Paystack: Invalid data format");
+      }
+      
+      Map<String, Object> data = (Map<String, Object>) dataObj;
+      String reference = data.get("reference") != null ? data.get("reference").toString() : null;
+      String authorizationUrl = data.get("authorization_url") != null ? data.get("authorization_url").toString() : null;
+      String accessCode = data.get("access_code") != null ? data.get("access_code").toString() : null;
 
       log.info("Paystack transaction initialized: {}", reference);
       return new PaystackInitiationResult(reference, authorizationUrl, accessCode);
@@ -94,8 +100,14 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
               .exchange(url, org.springframework.http.HttpMethod.GET, request, Map.class)
               .getBody();
 
-      Map<String, Object> data = (Map<String, Object>) response.get("data");
-      return (String) data.get("status");
+      Object dataObj = response.get("data");
+      if (!(dataObj instanceof Map)) {
+        log.error("Payment status data is not a Map: {}", dataObj.getClass().getName());
+        throw new RuntimeException("Failed to retrieve payment status: Invalid data format");
+      }
+      
+      Map<String, Object> data = (Map<String, Object>) dataObj;
+      return data.get("status") != null ? data.get("status").toString() : null;
 
     } catch (Exception e) {
       log.error("Failed to retrieve Paystack payment status: {}", paymentId, e);
@@ -121,36 +133,51 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
       String message = (String) response.getOrDefault("message", "Verification failed");
 
       if (status && response.containsKey("data")) {
-        Map<String, Object> data = (Map<String, Object>) response.get("data");
+        Object dataObj = response.get("data");
+        if (!(dataObj instanceof Map)) {
+          log.error("Payment verification data is not a Map: {}", dataObj.getClass().getName());
+          return new PaymentVerifyResponse(false, "Payment verification failed: Invalid data format", null);
+        }
+        
+        Map<String, Object> data = (Map<String, Object>) dataObj;
 
         // Parse customer information
         PaymentVerifyResponse.PaymentData.Customer customer = null;
         if (data.containsKey("customer")) {
-          Map<String, Object> customerData = (Map<String, Object>) data.get("customer");
-          customer = new PaymentVerifyResponse.PaymentData.Customer(
-              (String) customerData.get("email"),
-              (String) customerData.get("customer_code"));
+          Object customerObj = data.get("customer");
+          if (customerObj instanceof Map) {
+            Map<String, Object> customerData = (Map<String, Object>) customerObj;
+            customer = new PaymentVerifyResponse.PaymentData.Customer(
+                customerData.get("email") != null ? customerData.get("email").toString() : null,
+                customerData.get("customer_code") != null ? customerData.get("customer_code").toString() : null);
+          }
         }
 
         // Parse authorization information
         PaymentVerifyResponse.PaymentData.Authorization authorization = null;
         if (data.containsKey("authorization")) {
-          Map<String, Object> authData = (Map<String, Object>) data.get("authorization");
-          authorization = new PaymentVerifyResponse.PaymentData.Authorization(
-              (String) authData.get("authorization_code"),
-              (String) authData.get("bin"),
-              (String) authData.get("last4"),
-              (String) authData.get("exp_month"),
-              (String) authData.get("exp_year"),
-              (String) authData.get("card_type"),
-              (String) authData.get("bank"));
+          Object authObj = data.get("authorization");
+          if (authObj instanceof Map) {
+            Map<String, Object> authData = (Map<String, Object>) authObj;
+            authorization = new PaymentVerifyResponse.PaymentData.Authorization(
+                authData.get("authorization_code") != null ? authData.get("authorization_code").toString() : null,
+                authData.get("bin") != null ? authData.get("bin").toString() : null,
+                authData.get("last4") != null ? authData.get("last4").toString() : null,
+                authData.get("exp_month") != null ? authData.get("exp_month").toString() : null,
+                authData.get("exp_year") != null ? authData.get("exp_year").toString() : null,
+                authData.get("card_type") != null ? authData.get("card_type").toString() : null,
+                authData.get("bank") != null ? authData.get("bank").toString() : null);
+          }
         }
 
         // Parse metadata
         Map<String, Object> metadata = new HashMap<>();
         if (data.containsKey("metadata")) {
-          Map<String, Object> metadataData = (Map<String, Object>) data.get("metadata");
-          metadata.putAll(metadataData);
+          Object metadataObj = data.get("metadata");
+          if (metadataObj instanceof Map) {
+            Map<String, Object> metadataData = (Map<String, Object>) metadataObj;
+            metadata.putAll(metadataData);
+          }
         }
 
         PaymentVerifyResponse.PaymentData paymentData = new PaymentVerifyResponse.PaymentData(

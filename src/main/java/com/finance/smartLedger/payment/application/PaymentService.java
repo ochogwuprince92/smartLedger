@@ -111,7 +111,8 @@ public class PaymentService {
                 description,
                 payerEmail,
                 payerName,
-                null); // metadata can be added later if needed
+                null, // metadata can be added later if needed
+                callbackUrl); // use the provided callbackUrl
 
         payment.setGatewayReference(initiationResult.reference());
         payment.setAuthorizationUrl(initiationResult.authorizationUrl());
@@ -369,11 +370,16 @@ public class PaymentService {
 
     Payment payment = paymentOpt.get();
 
+    // Idempotency check - if already completed, return success
+    if (payment.getStatus() == PaymentStatus.COMPLETED) {
+      return new PaymentVerifyResponse(true, "Payment already completed", null);
+    }
+
     // Call gateway to verify payment
     PaymentVerifyResponse verificationResponse = paymentGatewayClient.verifyPayment(reference);
 
     if (verificationResponse.status() && verificationResponse.data() != null) {
-      // Payment verified successfully - complete it
+      // Payment verified successfully - process and complete it
       PaymentVerifyResponse.PaymentData data = verificationResponse.data();
 
       // Extract gateway response details
@@ -381,7 +387,12 @@ public class PaymentService {
       String gatewayResponseMessage = data.gatewayResponse();
       String gatewayTransactionId = data.reference();
 
-      // Complete the payment
+      // Process payment if still pending (PENDING → PROCESSING)
+      if (payment.getStatus() == PaymentStatus.PENDING) {
+        processPayment(payment.getId(), updatedBy);
+      }
+
+      // Complete the payment (PROCESSING → COMPLETED)
       completePayment(
           payment.getId(),
           gatewayTransactionId,

@@ -148,7 +148,7 @@ public class PaymentController {
   @PostMapping("/webhook/paystack")
   @Operation(summary = "Handle Paystack webhook", description = "Handles Paystack payment gateway webhooks")
   public ResponseEntity<ApiResponse<PaymentResponse>> handleWebhook(
-      @RequestHeader(value = "X-Webhook-Signature", required = false) String signature,
+      @RequestHeader(value = "x-paystack-signature", required = false) String signature,
       @RequestBody String payload) {
     Payment payment = webhookHandler.handleWebhook("paystack", payload, signature);
     if (payment != null) {

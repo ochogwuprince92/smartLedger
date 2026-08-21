@@ -36,7 +36,8 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
       String description,
       String customerEmail,
       String customerName,
-      Map<String, String> metadata) {
+      Map<String, String> metadata,
+      String callbackUrl) {
 
     try {
       String url = paystackProperties.getApiUrl() + "/transaction/initialize";
@@ -59,8 +60,10 @@ public class PaystackGatewayClient implements PaymentGatewayClient {
       if (metadata != null) {
         requestBody.put("metadata", metadata);
       }
-      if (paystackProperties.getCallbackUrl() != null) {
-        requestBody.put("callback_url", paystackProperties.getCallbackUrl());
+      // Use provided callbackUrl, fallback to configured one
+      String effectiveCallbackUrl = callbackUrl != null ? callbackUrl : paystackProperties.getCallbackUrl();
+      if (effectiveCallbackUrl != null) {
+        requestBody.put("callback_url", effectiveCallbackUrl);
       }
 
       HttpEntity<Map<String, Object>> request = new HttpEntity<>(requestBody, headers);

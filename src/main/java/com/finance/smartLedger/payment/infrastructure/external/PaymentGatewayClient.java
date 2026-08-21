@@ -12,7 +12,8 @@ public interface PaymentGatewayClient {
       String description,
       String customerEmail,
       String customerName,
-      Map<String, String> metadata);
+      Map<String, String> metadata,
+      String callbackUrl);
 
   PaymentVerifyResponse verifyPayment(String reference);
 

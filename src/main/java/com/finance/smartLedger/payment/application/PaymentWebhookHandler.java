@@ -31,14 +31,15 @@ public class PaymentWebhookHandler {
       String gatewayTransactionId = extractTransactionId(jsonNode, gatewayType);
       String gatewayReference = extractReference(jsonNode, gatewayType);
 
+      // Look up payment by gatewayReference (not gatewayTransactionId which is null before completion)
       Optional<Payment> existingPayment =
-          paymentService.findByGatewayTransactionId(gatewayTransactionId);
+          paymentService.findByGatewayReference(gatewayReference);
 
       if (existingPayment.isPresent()) {
         return updatePaymentFromWebhook(
-            existingPayment.get(), eventType, jsonNode, gatewayType, gatewayReference);
+            existingPayment.get(), eventType, jsonNode, gatewayType, gatewayReference, gatewayTransactionId);
       } else {
-        log.warn("Payment not found for transaction ID: {}", gatewayTransactionId);
+        log.warn("Payment not found for gateway reference: {}", gatewayReference);
         return null;
       }
     } catch (Exception e) {
@@ -61,17 +62,18 @@ public class PaymentWebhookHandler {
       String eventType,
       JsonNode jsonNode,
       String gatewayType,
-      String gatewayReference) {
+      String gatewayReference,
+      String gatewayTransactionId) {
     return switch (eventType.toLowerCase()) {
       case "charge.success", "payment.success" -> {
         // First process the payment if it's still pending
         if (payment.getStatus().name().equals("PENDING")) {
           paymentService.processPayment(payment.getId(), "webhook");
         }
-        // Then complete it
+        // Then complete it with the actual gateway transaction ID from webhook
         yield paymentService.completePayment(
             payment.getId(),
-            payment.getGatewayTransactionId(),
+            gatewayTransactionId,
             gatewayReference,
             extractResponseCode(jsonNode, gatewayType),
             extractResponseMessage(jsonNode, gatewayType),

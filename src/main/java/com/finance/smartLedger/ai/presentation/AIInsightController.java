@@ -42,6 +42,14 @@ public class AIInsightController {
     try {
       // Verify HMAC signature - properly serialize to JSON
       String payload = objectMapper.writeValueAsString(request);
+      String expectedSignature = hmacSignatureUtil.calculateSignature(payload, callbackSecret);
+      
+      log.info("AI Callback - requestId: {}", request.getRequestId());
+      log.info("Payload: {}", payload);
+      log.info("Received signature: {}", request.getSignature());
+      log.info("Expected signature: {}", expectedSignature);
+      log.info("Callback secret: {}", callbackSecret);
+      
       if (!hmacSignatureUtil.verifySignature(payload, request.getSignature(), callbackSecret)) {
         log.warn("Invalid HMAC signature for callback: requestId={}", request.getRequestId());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)

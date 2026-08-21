@@ -40,15 +40,23 @@ public class AIInsightController {
   @Operation(summary = "AI insight callback", description = "Callback endpoint for n8n to return AI insights")
   public ResponseEntity<AICallbackResponse> handleCallback(@RequestBody AICallbackRequest request) {
     try {
-      // Verify HMAC signature - properly serialize to JSON
-      String payload = objectMapper.writeValueAsString(request);
+      // Verify HMAC signature - exclude signature field from payload
+      AICallbackRequest requestForSignature = new AICallbackRequest(
+          request.getRequestId(),
+          request.getReconciliationId(),
+          request.getRiskLevel(),
+          request.getSummary(),
+          request.getRootCause(),
+          request.getRecommendations(),
+          null // Exclude signature from signature calculation
+      );
+      String payload = objectMapper.writeValueAsString(requestForSignature);
       String expectedSignature = hmacSignatureUtil.calculateSignature(payload, callbackSecret);
       
       log.info("AI Callback - requestId: {}", request.getRequestId());
-      log.info("Payload: {}", payload);
+      log.info("Payload (without signature): {}", payload);
       log.info("Received signature: {}", request.getSignature());
       log.info("Expected signature: {}", expectedSignature);
-      log.info("Callback secret: {}", callbackSecret);
       
       if (!hmacSignatureUtil.verifySignature(payload, request.getSignature(), callbackSecret)) {
         log.warn("Invalid HMAC signature for callback: requestId={}", request.getRequestId());

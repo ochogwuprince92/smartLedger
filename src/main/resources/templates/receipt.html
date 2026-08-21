@@ -78,7 +78,7 @@
         </tr>
         <tr>
             <td class="label">Amount:</td>
-            <td th:text="${payment.currencyCode} + ' ' + #numbers.formatDecimal(payment.amount, 1, 'COMMA', 2, 'POINT')}"></td>
+            <td th:text="${payment.currencyCode + ' ' + #numbers.formatDecimal(payment.amount, 1, ',', '.', 2)}"></td>
         </tr>
         <tr>
             <td class="label">Payment Method:</td>

@@ -77,6 +77,7 @@ public class Reconciliation extends AuditableEntity {
     this.totalActualAmount = BigDecimal.ZERO;
     this.varianceAmount = totalExpectedAmount;
     this.description = description;
+    this.items = new ArrayList<>();
     this.setCreatedBy(createdBy);
     this.setUpdatedBy(createdBy);
   }

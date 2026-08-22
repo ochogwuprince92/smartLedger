@@ -106,27 +106,6 @@ public class AIInsightService {
   }
 
   @Transactional
-  public AIInsight createTestInsight(UUID reconciliationId) {
-    String requestId = UUID.randomUUID().toString();
-    if (reconciliationId == null) {
-      reconciliationId = UUID.randomUUID();
-    }
-
-    AIInsight insight =
-        AIInsight.builder()
-            .requestId(requestId)
-            .reconciliationId(reconciliationId)
-            .insightType(AIInsightType.RECONCILIATION)
-            .status(InsightStatus.PENDING)
-            .requestedAt(LocalDateTime.now())
-            .retryCount(0)
-            .maxRetries(3)
-            .build();
-    insight.setCreatedBy("system");
-    return aiInsightRepository.save(insight);
-  }
-
-  @Transactional
   public void handleCallback(AICallbackRequest callback) {
     AIInsight insight =
         aiInsightRepository

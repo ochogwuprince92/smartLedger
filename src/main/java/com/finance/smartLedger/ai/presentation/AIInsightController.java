@@ -36,14 +36,6 @@ public class AIInsightController {
   @Value("${n8n.callback-secret}")
   private String callbackSecret;
 
-  @PostMapping("/test-create")
-  @Operation(summary = "Create test AI insight", description = "Creates a test AI insight for callback testing")
-  public ResponseEntity<ApiResponse<AIInsight>> createTestInsight(
-      @RequestParam(required = false) UUID reconciliationId) {
-    AIInsight insight = aiInsightService.createTestInsight(reconciliationId);
-    return ResponseEntity.ok(ApiResponse.success("Test insight created", insight));
-  }
-
   @PostMapping("/callback")
   @Operation(summary = "AI insight callback", description = "Callback endpoint for n8n to return AI insights")
   public ResponseEntity<AICallbackResponse> handleCallback(@RequestBody AICallbackRequest request) {
